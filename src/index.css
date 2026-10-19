@@ -1,0 +1,226 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── HARD-CODED DARK TOKENS — no prefers-color-scheme, no runtime class ── */
+:root {
+  --bg:            #06090f;
+  --bg2:           #0a1020;
+  --bg3:           #0d1530;
+  --surface:       rgba(13,20,46,0.85);
+  --surface-strong:rgba(13,22,50,0.90);
+  --surface-muted: rgba(10,16,36,0.80);
+  --surface-hover: rgba(16,26,58,0.92);
+  --ink:           #eef4ff;
+  --ink-2:         #b8cfeb;
+  --muted:         #6a849f;
+  --subtle:        #3d5268;
+  --border:        rgba(255,255,255,0.09);
+  --border-strong: rgba(180,210,255,0.30);
+  --accent-blue:   #3b82f6;
+  --accent-purple: #8b5cf6;
+  --accent-teal:   #14b8a6;
+  --accent:        #90b4e0;
+  --accent-hover:  #bdd5f5;
+  --focus:         #3b82f6;
+  --success:       #34d399;
+  --danger:        #f87171;
+}
+
+/* Every selector defeats Tailwind preflight AND provider stylesheet injection */
+html,
+html:not([class]),
+html[class] {
+  background: #06090f !important;
+  color: #eef4ff !important;
+  color-scheme: dark !important;
+  min-height: 100dvh;
+}
+
+body,
+body:not([class]),
+body[class] {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #06090f !important;
+  background-image: linear-gradient(160deg,#06090f 0%,#0a1020 50%,#0d1530 100%) !important;
+  color: #eef4ff !important;
+  min-height: 100dvh;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100dvh;
+  background: transparent;
+  isolation: isolate; /* new stacking context — nothing outside can stack over it */
+}
+
+* { box-sizing: border-box; }
+
+/* ─── Typography ──────────────────────────────────────────────────────── */
+.display { font-family: 'Space Grotesk', system-ui, sans-serif; letter-spacing: -0.03em; }
+.mono    { font-family: 'JetBrains Mono', Menlo, monospace; }
+
+/* ─── Glass card ──────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* ─── Gradient card accents ───────────────────────────────────────────── */
+.card-blue   { box-shadow: 0 0 0 1px rgba(59,130,246,0.22), 0 6px 30px rgba(59,130,246,0.10); }
+.card-purple { box-shadow: 0 0 0 1px rgba(139,92,246,0.22), 0 6px 30px rgba(139,92,246,0.10); }
+.card-teal   { box-shadow: 0 0 0 1px rgba(20,184,166,0.22), 0 6px 30px rgba(20,184,166,0.10); }
+
+/* ─── Input ───────────────────────────────────────────────────────────── */
+.input {
+  width: 100%;
+  background: rgba(8,14,26,0.85) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: #eef4ff !important;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+  color-scheme: dark;
+  /* Force dark spin buttons and date picker chrome in all browsers */
+  accent-color: #3b82f6;
+}
+.input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.20) !important;
+}
+.input::placeholder { color: #3d5268 !important; opacity: 1 !important; }
+
+/* Spin buttons dark */
+.input::-webkit-inner-spin-button,
+.input::-webkit-outer-spin-button { opacity: 0.5; filter: invert(1); }
+
+/* Kill browser autofill yellow */
+.input:-webkit-autofill,
+.input:-webkit-autofill:hover,
+.input:-webkit-autofill:focus,
+.input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 9999px #080e1a inset !important;
+  box-shadow:         0 0 0 9999px #080e1a inset !important;
+  -webkit-text-fill-color: #eef4ff !important;
+  caret-color: #eef4ff !important;
+}
+
+/* Global dark color-scheme for ALL native form controls */
+input, select, textarea, button {
+  color-scheme: dark;
+}
+/* Selects and textareas explicitly dark */
+select {
+  background: rgba(8,14,26,0.85) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  color: #eef4ff !important;
+  color-scheme: dark;
+}
+textarea {
+  background: rgba(8,14,26,0.85) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  color: #eef4ff !important;
+  color-scheme: dark;
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg,#3b82f6 0%,#8b5cf6 100%);
+  color: #fff !important;
+  border: none;
+  border-radius: 0.875rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  min-height: 44px;
+  box-shadow: 0 4px 16px rgba(59,130,246,0.28);
+  position: relative;
+  z-index: 1; /* always above any glass overlay */
+}
+.btn-primary:hover:not(:disabled)  { opacity: 0.88; transform: translateY(-1px); }
+.btn-primary:active:not(:disabled) { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.38; cursor: not-allowed; }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--ink-2);
+  border: 1px solid var(--border);
+  border-radius: 0.875rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  min-height: 44px;
+  position: relative;
+  z-index: 1;
+}
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+.btn-ghost:disabled { opacity: 0.38; cursor: not-allowed; }
+
+/* ─── Labels ──────────────────────────────────────────────────────────── */
+.label-sm {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ─── Scrollbar ───────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+
+/* ─── Gradient text ───────────────────────────────────────────────────── */
+.grad-text {
+  background: linear-gradient(135deg,#60a5fa,#a78bfa,#2dd4bf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Vault hero animations ───────────────────────────────────────────── */
+@keyframes vault-float   { 0%,100%{transform:translateY(0)}  50%{transform:translateY(-8px)}  }
+@keyframes coin-float    { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-12px) rotate(12deg)} }
+@keyframes glow-pulse    { 0%,100%{opacity:0.45} 50%{opacity:0.9} }
+@keyframes dial-spin     { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes sparkle-pop   { 0%,100%{opacity:0;transform:scale(0)} 50%{opacity:1;transform:scale(1)} }
+
+.vault-float   { animation: vault-float 4s ease-in-out infinite; }
+.dial-spin     { animation: dial-spin 12s linear infinite; transform-origin: 50% 50%; }
+.glow-pulse    { animation: glow-pulse 3s ease-in-out infinite; }
+
+/* ─── Reduced motion ──────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:       0.01ms !important;
+    animation-iteration-count:1      !important;
+    transition-duration:      0.01ms !important;
+  }
+}
