@@ -182,8 +182,8 @@ function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }) {
             Protect your USDC<br />with AmanahVault
           </h1>
           <p style={{ color: '#6a849f', fontSize: 14, lineHeight: 1.75, margin: '0 0 22px', maxWidth: 340 }}>
-            Deposit USDC, set your beneficiaries and check in regularly.
-            If you miss a check-in, the vault releases to your chosen addresses automatically.
+            Deposit USDC, set your beneficiaries and choose a period.
+            Check in once within your chosen period and your timer restarts. Only if the entire period passes with no check-in can anyone release the vault.
           </p>
 
           {/* CTA buttons */}
@@ -310,8 +310,8 @@ function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }) {
             },
             {
               icon: <CheckCircle2 size={18} color="#8b5cf6" />,
-              title: 'Check in regularly',
-              desc: 'Call Check In before the deadline. Each check-in resets the timer. Missing a check-in is what triggers a release.',
+              title: 'Check in before your deadline',
+              desc: 'Any check-in, on any day, restarts the full timer. Only if the entire period passes with no check-in can anyone release the vault.',
               accent: 'purple' as const,
             },
             {
@@ -442,6 +442,37 @@ export default function App() {
         {/* Top wallet bar */}
         <WalletBar />
 
+        {/* Demo banner */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexWrap: 'wrap', gap: 8,
+          padding: '8px 16px',
+          background: 'linear-gradient(90deg,rgba(59,130,246,0.12),rgba(139,92,246,0.10))',
+          borderBottom: '1px solid rgba(59,130,246,0.18)',
+          fontSize: 12, color: '#93b8e8',
+        }}>
+          <span>
+            <span style={{ fontWeight: 600, color: '#7dd3fc' }}>Arc Testnet demo.</span>
+            {' '}Test USDC only, unaudited. Feedback welcome.
+          </span>
+          <a
+            href="https://x.com/sufian_kingx"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '4px 12px', borderRadius: 20,
+              background: 'rgba(59,130,246,0.18)',
+              border: '1px solid rgba(59,130,246,0.30)',
+              color: '#93c5fd', fontSize: 11, fontWeight: 600,
+              textDecoration: 'none', cursor: 'pointer',
+              transition: 'background 0.15s',
+            }}
+          >
+            Give feedback ↗
+          </a>
+        </div>
+
         {/* Undeployed banner */}
         {!contractIsDeployed && (
           <div style={{
@@ -544,8 +575,8 @@ function HowItWorksPage() {
       icon: <Send size={20} color="#14b8a6" />,
     },
     {
-      title: 'Check in regularly',
-      desc: 'Before the check-in deadline, call checkIn(). Each call resets the timer. If you miss the window, anyone can trigger a release.',
+      title: 'Check in before your deadline',
+      desc: 'Call checkIn() at any point before the period expires. Any check-in restarts the full timer. If the entire period passes with no check-in, anyone can call release().',
       accent: 'purple' as const,
       icon: <CheckCircle2 size={20} color="#8b5cf6" />,
     },
