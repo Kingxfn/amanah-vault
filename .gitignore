@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+contracts/out/
+contracts/cache/
+
+# Environment — never commit secrets
+.env
+.env.*
+!.env.example
+
+# Foundry
+broadcast/
+cache/
+
+# Circle credentials
+.circle/
+
+# Runtime debug files
+console.jsonl
+traces.jsonl
+
+# Editor / OS
+.DS_Store
+*.local
