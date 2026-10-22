@@ -442,37 +442,6 @@ export default function App() {
         {/* Top wallet bar */}
         <WalletBar />
 
-        {/* Demo banner */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          flexWrap: 'wrap', gap: 8,
-          padding: '8px 16px',
-          background: 'linear-gradient(90deg,rgba(59,130,246,0.12),rgba(139,92,246,0.10))',
-          borderBottom: '1px solid rgba(59,130,246,0.18)',
-          fontSize: 12, color: '#93b8e8',
-        }}>
-          <span>
-            <span style={{ fontWeight: 600, color: '#7dd3fc' }}>Arc Testnet demo.</span>
-            {' '}Test USDC only, unaudited. Feedback welcome.
-          </span>
-          <a
-            href="https://x.com/sufian_kingx"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              padding: '4px 12px', borderRadius: 20,
-              background: 'rgba(59,130,246,0.18)',
-              border: '1px solid rgba(59,130,246,0.30)',
-              color: '#93c5fd', fontSize: 11, fontWeight: 600,
-              textDecoration: 'none', cursor: 'pointer',
-              transition: 'background 0.15s',
-            }}
-          >
-            Give feedback ↗
-          </a>
-        </div>
-
         {/* Undeployed banner */}
         {!contractIsDeployed && (
           <div style={{
