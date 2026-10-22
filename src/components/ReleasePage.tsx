@@ -95,7 +95,7 @@ export function ReleasePage() {
       <div>
         <h2 className="display text-2xl font-bold text-[var(--ink)] tracking-tight">Release a vault</h2>
         <p className="text-sm text-[var(--muted)] mt-1 text-pretty">
-          If a vault owner missed their check-in window, anyone can trigger the release. Beneficiaries can then claim their share.
+          If the full check-in period has passed with no check-in, anyone can trigger the release. Each beneficiary then calls Claim to receive their share.
         </p>
       </div>
 
@@ -229,7 +229,7 @@ export function ReleasePage() {
         </div>
         <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[
-            'Release is only possible after the owner misses their check-in deadline.',
+            'Release is only possible after the entire check-in period passes with no check-in.',
             'Anyone can call release — not just beneficiaries.',
             'Release writes each beneficiary\'s share to a claimable balance.',
             'Each beneficiary then pulls their own funds using Claim.',

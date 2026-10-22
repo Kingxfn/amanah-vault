@@ -165,7 +165,7 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
             ))}
           </div>
           <p className="text-xs text-[var(--muted)]">
-            If you miss a check-in, anyone can release your vault after this period.
+            If the entire period passes with no check-in, anyone can release your vault. A single check-in at any point resets the full timer.
           </p>
         </div>
 

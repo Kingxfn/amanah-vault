@@ -2,7 +2,7 @@
 
 A multi-tenant USDC dead-man's-switch vault on Arc Testnet.
 
-Each vault owner sets a check-in interval and a list of beneficiaries with percentage shares. If the owner stops checking in, **anyone** can call `release()` once the interval expires. Funds are then distributed via a pull-claim model — each beneficiary independently calls `claim()` for their share. One contract serves all users.
+Each vault owner sets a check-in period (e.g. 90 days) and a list of beneficiaries with percentage shares. The owner can check in at any point before the deadline — any single check-in restarts the full period. Only if the **entire period passes with no check-in** can anyone call `release()`. Funds are then distributed via a pull-claim model — each beneficiary independently calls `claim()` for their share. One contract serves all users.
 
 **Contract (Arc Testnet):** `0x45046EA5600dB33bAC486439A3A30C82B101016F`
 **Explorer:** https://explorer.testnet.arc.io/address/0x45046EA5600dB33bAC486439A3A30C82B101016F

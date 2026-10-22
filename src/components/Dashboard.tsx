@@ -57,7 +57,7 @@ export function Dashboard() {
               digital legacy
             </h1>
             <p className="text-sm text-[var(--muted)] max-w-xs text-pretty">
-              A dead-man's-switch USDC vault. Your beneficiaries receive your funds automatically if you stop checking in.
+              A USDC time-lock vault. Choose a period — check in any time before it expires to restart the full timer. If the entire period passes with no check-in, anyone can release the vault to your beneficiaries.
             </p>
             <div className="flex items-center gap-2 pt-1 text-xs text-[var(--subtle)]">
               <span className="mono">{total}</span>
@@ -138,8 +138,8 @@ export function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { n: '1', title: 'Create a vault', desc: 'Set beneficiaries, share splits, and a check-in interval.' },
-              { n: '2', title: 'Check in regularly', desc: 'Reset the timer before it expires to keep your vault locked.' },
-              { n: '3', title: 'Automatic release', desc: 'If you miss your window, anyone can trigger the release.' },
+              { n: '2', title: 'Check in before your deadline', desc: 'Any check-in resets the full timer. You only need to check in once per period — any day, any time.' },
+              { n: '3', title: 'Anyone can release when overdue', desc: 'Only if the entire period passes with no check-in can anyone call release(). Beneficiaries then each claim their share.' },
             ].map(step => (
               <div key={step.n} className="flex gap-3">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5"
