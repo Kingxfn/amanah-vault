@@ -354,31 +354,6 @@ function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }) {
         </div>
       </div>
 
-      {/* ── Safety notes ── */}
-      <div style={{
-        ...glowCard('purple'),
-        padding: '16px 20px',
-        marginBottom: 8,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <Shield size={15} color="#a78bfa" />
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#eef4ff' }}>Safety notes</span>
-        </div>
-        <ul style={{
-          margin: 0, padding: 0, listStyle: 'none',
-          display: 'flex', flexDirection: 'column', gap: 6,
-        }}>
-          {[
-            'Unaudited. Use small amounts.',
-            'Not a legal will.',
-          ].map((note, i) => (
-            <li key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 12, color: '#6a849f' }}>
-              <span style={{ color: '#8b5cf6', marginTop: 1, flexShrink: 0 }}>•</span>
-              {note}
-            </li>
-          ))}
-        </ul>
-      </div>
     </div>
   )
 }
@@ -503,10 +478,7 @@ export default function App() {
             display: 'flex', flexWrap: 'wrap', gap: 10,
             alignItems: 'center', justifyContent: 'space-between',
           }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <span>Unaudited. Use small amounts.</span>
-              <span>Not a legal will.</span>
-            </div>
+            <span>Unaudited. Use small amounts. Not a legal will.</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               {contractIsDeployed && (
                 <a
@@ -617,23 +589,6 @@ function HowItWorksPage() {
         ))}
       </div>
 
-      <div style={{ marginTop: 28, ...glowCard('purple'), padding: '16px 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <Shield size={14} color="#a78bfa" />
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#eef4ff' }}>Important notices</span>
-        </div>
-        <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {[
-            'Unaudited. Use small amounts.',
-            'Not a legal will.',
-          ].map((note, i) => (
-            <li key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: '#6a849f' }}>
-              <span style={{ color: '#8b5cf6', flexShrink: 0 }}>•</span>
-              {note}
-            </li>
-          ))}
-        </ul>
-      </div>
     </div>
   )
 }
