@@ -317,7 +317,7 @@ function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }) {
             {
               icon: <Clock size={18} color="#3b82f6" />,
               title: 'Release & Claim',
-              desc: 'Once overdue, anyone can trigger Release. Beneficiaries then each call Claim to pull their own share. The owner can withdraw the full balance at any time while active.',
+              desc: 'Once overdue, anyone can trigger the release — but funds can only be claimed by the listed beneficiaries. The person who triggers release receives nothing. The owner can withdraw the full balance at any time while active.',
               accent: 'blue' as const,
             },
           ].map((step, i) => (
@@ -545,13 +545,13 @@ function HowItWorksPage() {
     },
     {
       title: 'Check in before your deadline',
-      desc: 'Call checkIn() at any point before the period expires. Any check-in restarts the full timer. If the entire period passes with no check-in, anyone can call release().',
+      desc: 'Call checkIn() at any point before the period expires. Any check-in restarts the full timer. If the entire period passes with no check-in, anyone can trigger the release — but only listed beneficiaries can claim funds.',
       accent: 'purple' as const,
       icon: <CheckCircle2 size={20} color="#8b5cf6" />,
     },
     {
-      title: 'Release (permissionless)',
-      desc: 'Once the vault is overdue, anyone can call release(). This computes each beneficiary\'s share and writes it to their claimable balance.',
+      title: 'Release & Claim',
+      desc: 'Once overdue, anyone can call release() — but the person who triggers it receives nothing. release() records each beneficiary\'s share. Only listed beneficiaries can call claim() to receive their portion.',
       accent: 'blue' as const,
       icon: <Zap size={20} color="#3b82f6" />,
     },

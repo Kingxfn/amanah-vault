@@ -95,7 +95,7 @@ export function ReleasePage() {
       <div>
         <h2 className="display text-2xl font-bold text-[var(--ink)] tracking-tight">Release a vault</h2>
         <p className="text-sm text-[var(--muted)] mt-1 text-pretty">
-          If the full check-in period has passed with no check-in, anyone can trigger the release. Each beneficiary then calls Claim to receive their share.
+          Anyone can trigger the release once the full check-in period has passed, but the funds can only be claimed by the beneficiaries listed in the vault. The person who triggers the release receives nothing.
         </p>
       </div>
 
@@ -230,8 +230,8 @@ export function ReleasePage() {
         <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[
             'Release is only possible after the entire check-in period passes with no check-in.',
-            'Anyone can call release — not just beneficiaries.',
-            'Release writes each beneficiary\'s share to a claimable balance.',
+            'Anyone can call release — not just beneficiaries. The caller receives nothing.',
+            'Release records each beneficiary\'s share. The person who triggers release receives nothing.',
             'Each beneficiary then pulls their own funds using Claim.',
             'Release can only happen once per vault.',
           ].map((item, i) => (
