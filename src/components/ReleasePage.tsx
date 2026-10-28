@@ -6,7 +6,7 @@ import {
   parseOnchainError, txExplorerUrl, CHAIN_ID,
 } from '@/utils'
 import { TxResult } from './TxResult'
-import { ExternalLink, Search, Shield } from 'lucide-react'
+import { ExternalLink, Search, Shield, AlertTriangle } from 'lucide-react'
 import { ChainGuard } from './ChainGuard'
 
 export function ReleasePage() {
@@ -15,6 +15,7 @@ export function ReleasePage() {
   const [vaultId, setVaultId] = useState<bigint | null>(null)
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000))
   const [txError, setTxError] = useState<string | null>(null)
+  const [releaseConfirmed, setReleaseConfirmed] = useState(false)
 
   useEffect(() => {
     const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000)
@@ -158,15 +159,52 @@ export function ReleasePage() {
               </div>
             </div>
 
-            {/* Release button */}
+            {/* Release — warning + confirmation */}
             {!released && isOverdue && active && (
-              <button
-                onClick={handleRelease}
-                disabled={isPending || isConfirming}
-                className="btn-primary w-full"
-              >
-                {isPending ? 'Confirm in wallet…' : isConfirming ? 'Confirming…' : 'Release vault'}
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {/* Warning card */}
+                <div style={{
+                  borderRadius: 10, padding: '10px 14px',
+                  border: '1px solid rgba(248,113,113,0.35)',
+                  background: 'rgba(248,113,113,0.07)',
+                  display: 'flex', gap: 10, alignItems: 'flex-start',
+                }}>
+                  <AlertTriangle size={15} color="#f87171" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <div style={{ fontSize: 12, color: '#fca5a5', lineHeight: 1.65 }}>
+                    <strong style={{ color: '#f87171', display: 'block', marginBottom: 3 }}>Release is final and irreversible.</strong>
+                    Once triggered, the vault balance is permanently allocated to the listed beneficiaries.
+                    The person who triggers release receives nothing — only beneficiaries can claim.
+                    This action cannot be undone.
+                  </div>
+                </div>
+                {/* Confirmation checkbox */}
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 9, cursor: 'pointer', fontSize: 12, color: '#b8cfeb' }}>
+                  <input
+                    type="checkbox"
+                    checked={releaseConfirmed}
+                    onChange={e => setReleaseConfirmed(e.target.checked)}
+                    style={{ marginTop: 2, accentColor: '#f87171', width: 14, height: 14, flexShrink: 0, cursor: 'pointer' }}
+                  />
+                  I understand this release is final and irreversible. I am not expecting to receive any funds.
+                </label>
+                <button
+                  onClick={handleRelease}
+                  disabled={isPending || isConfirming || !releaseConfirmed}
+                  style={{
+                    width: '100%', padding: '10px', borderRadius: 10, border: 'none',
+                    background: releaseConfirmed
+                      ? 'linear-gradient(135deg,#dc2626,#9333ea)'
+                      : 'rgba(255,255,255,0.06)',
+                    color: releaseConfirmed ? '#fff' : '#6a849f',
+                    fontWeight: 600, fontSize: 14, cursor: releaseConfirmed ? 'pointer' : 'not-allowed',
+                    fontFamily: 'inherit',
+                    transition: 'background 0.2s',
+                    opacity: isPending || isConfirming ? 0.6 : 1,
+                  }}
+                >
+                  {isPending ? 'Confirm in wallet…' : isConfirming ? 'Confirming…' : 'Release vault'}
+                </button>
+              </div>
             )}
 
             {/* Claim button */}

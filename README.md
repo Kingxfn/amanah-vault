@@ -95,6 +95,28 @@ Then set `VITE_VAULT_ADDRESS` in `.env` to the new address.
 
 ---
 
+## Limitations
+
+- **Sliding-window deadline.** The check-in deadline is computed as `lastCheckIn + interval`. The owner can still call `checkIn()` after the deadline has passed — as long as `release()` has not been called yet, a late check-in resets the timer. The vault only becomes permanently releasable once someone calls `release()` while it is overdue.
+- **Any interval accepted.** The contract places no minimum or maximum on the check-in interval. Very short intervals (e.g. the 2-minute test option) are valid but mean the vault can be released almost immediately if the owner forgets to check in.
+- **No grace period.** There is no buffer between the deadline passing and the vault becoming releasable. Once the interval expires, `release()` can be called.
+- **Release is final.** Once released, the vault balance is allocated to beneficiaries and cannot be reversed. The owner cannot withdraw after release.
+- **Unaudited.** The contract has not been independently audited. Use small amounts.
+
+---
+
+## Roadmap
+
+These features are not yet implemented:
+
+- **Grace / pending window.** A configurable period after the deadline during which release is not yet allowed, giving the owner a buffer to check in late.
+- **Guardian veto.** A designated address that can block or delay a release during a dispute window.
+- **Beneficiary note.** An optional on-chain or off-chain message the owner can attach to each beneficiary (e.g. a reference to instructions).
+- **Interval update.** Allow the vault owner to change the check-in interval on an active vault (currently requires creating a new vault).
+- **Backup beneficiary.** A fallback address that receives unclaimed shares if a listed beneficiary never calls `claim()` after a timeout.
+
+---
+
 ## License
 
 MIT

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { Plus, Trash2, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, ExternalLink, Calendar } from 'lucide-react'
 import { AMANA_VAULT_ADDRESS, AMANA_VAULT_ABI } from '@/contract'
 import { INTERVAL_OPTIONS, parseOnchainError, txExplorerUrl } from '@/utils'
 import { TxResult } from './TxResult'
@@ -8,17 +8,36 @@ import { ChainGuard } from './ChainGuard'
 
 interface BeneficiaryRow {
   wallet: string
-  pct: string // 0–100, stored as string for input
+  pct: string
 }
+
+// -1 means "custom"
+const PRESET_IDX_CUSTOM = -1
 
 export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
   const { isConnected } = useAccount()
-  const [rows, setRows] = useState<BeneficiaryRow[]>([{ wallet: '', pct: '100' }])
+  const [rows, setRows]         = useState<BeneficiaryRow[]>([{ wallet: '', pct: '100' }])
   const [intervalIdx, setIntervalIdx] = useState(1) // default 7 days
-  const [error, setError] = useState<string | null>(null)
+  const [customDays, setCustomDays]   = useState('')
+  const [acknowledged, setAcknowledged] = useState(false)
+  const [error, setError]       = useState<string | null>(null)
 
   const { writeContract, data: hash, isPending, reset } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  // Resolve seconds from selection
+  const isCustom = intervalIdx === PRESET_IDX_CUSTOM
+  const customSecs = isCustom
+    ? Math.max(1, Math.floor(parseFloat(customDays) || 0)) * 86400
+    : INTERVAL_OPTIONS[intervalIdx].seconds
+  const intervalSeconds = isCustom ? customSecs : INTERVAL_OPTIONS[intervalIdx].seconds
+
+  // Deadline preview — useMemo so Date.now() is not called on every render pass
+  const deadlineDate = useMemo(
+    () => intervalSeconds > 0 ? new Date(Date.now() + intervalSeconds * 1000) : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [intervalSeconds],
+  )
 
   const totalPct = rows.reduce((s, r) => s + (parseFloat(r.pct) || 0), 0)
   const sharesOk = Math.abs(totalPct - 100) < 0.001
@@ -27,12 +46,10 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
     if (rows.length >= 10) return
     setRows(r => [...r, { wallet: '', pct: '0' }])
   }
-
   function removeRow(i: number) {
     if (rows.length === 1) return
     setRows(r => r.filter((_, idx) => idx !== i))
   }
-
   function updateRow(i: number, field: keyof BeneficiaryRow, val: string) {
     setRows(r => r.map((row, idx) => (idx === i ? { ...row, [field]: val } : row)))
   }
@@ -46,6 +63,11 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
       if (isNaN(p) || p <= 0) return 'All shares must be greater than 0%.'
     }
     if (!sharesOk) return `Shares total ${totalPct.toFixed(2)}% — must equal exactly 100%.`
+    if (isCustom) {
+      const d = parseFloat(customDays)
+      if (isNaN(d) || d < 1) return 'Custom interval must be at least 1 day.'
+    }
+    if (!acknowledged) return 'Please confirm the acknowledgement before creating a vault.'
     return null
   }
 
@@ -56,8 +78,6 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
     const err = validate()
     if (err) { setError(err); return }
 
-    // Convert pct → basis points (100% = 10000 bps)
-    // Assign rounding remainder to last beneficiary so sum is exactly 10000
     const rawBps = rows.map(r => Math.floor((parseFloat(r.pct) / 100) * 10000))
     const diff = 10000 - rawBps.reduce((a, b) => a + b, 0)
     rawBps[rawBps.length - 1] += diff
@@ -69,7 +89,7 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
       args: [
         rows.map(r => r.wallet as `0x${string}`),
         rawBps.map(b => b) as unknown as readonly number[],
-        BigInt(INTERVAL_OPTIONS[intervalIdx].seconds),
+        BigInt(intervalSeconds),
       ],
     }, {
       onSuccess: () => { onCreated?.() },
@@ -80,6 +100,7 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
   return (
     <ChainGuard>
       <form onSubmit={handleSubmit} className="space-y-5">
+
         {/* Beneficiaries */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -88,7 +109,6 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
               {totalPct.toFixed(1)}% / 100%
             </span>
           </div>
-
           <div className="space-y-2">
             {rows.map((row, i) => (
               <div key={i} className="flex gap-2 items-start">
@@ -127,7 +147,6 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
               </div>
             ))}
           </div>
-
           {rows.length < 10 && (
             <button
               type="button"
@@ -140,9 +159,9 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
         </div>
 
         {/* Interval */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <label className="label-sm">Check-in interval</label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 xs:grid-cols-4 gap-2">
             {INTERVAL_OPTIONS.map((opt, i) => (
               <button
                 key={i}
@@ -158,18 +177,87 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
                   border: '1px solid rgba(255,255,255,0.09)',
                   color: '#b8cfeb',
                 }}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-left transition-colors hover:border-[var(--border-strong)]"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-center transition-colors hover:border-[var(--border-strong)]"
               >
                 {opt.label}
               </button>
             ))}
+            {/* Custom */}
+            <button
+              type="button"
+              onClick={() => setIntervalIdx(PRESET_IDX_CUSTOM)}
+              style={isCustom ? {
+                background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)',
+                border: '1px solid rgba(139,92,246,0.5)',
+                color: '#fff',
+                boxShadow: '0 2px 12px rgba(59,130,246,0.25)',
+              } : {
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.09)',
+                color: '#b8cfeb',
+              }}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-center transition-colors hover:border-[var(--border-strong)]"
+            >
+              Custom…
+            </button>
           </div>
+
+          {/* Custom days input */}
+          {isCustom && (
+            <div className="flex items-center gap-2 mt-1">
+              <div className="relative flex-1 max-w-[160px]">
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="e.g. 60"
+                  value={customDays}
+                  onChange={e => setCustomDays(e.target.value)}
+                  className="input w-full pr-10 tabular-nums"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--muted)] pointer-events-none">days</span>
+              </div>
+              <span className="text-xs text-[var(--muted)]">whole days, min 1</span>
+            </div>
+          )}
+
+          {/* Deadline preview */}
+          {deadlineDate && intervalSeconds > 0 && (
+            <div className="flex items-center gap-2 text-xs" style={{ color: '#6a849f' }}>
+              <Calendar size={12} style={{ flexShrink: 0 }} />
+              First deadline: <span style={{ color: '#93b8e8', fontWeight: 500 }}>
+                {deadlineDate.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+              </span>
+              <span style={{ color: '#3d5268' }}>(if created now)</span>
+            </div>
+          )}
+
           <p className="text-xs text-[var(--muted)]">
             If the entire period passes with no check-in, anyone can trigger the release — but only your listed beneficiaries can claim the funds. A single check-in at any point resets the full timer.
           </p>
         </div>
 
-        {/* Error inline */}
+        {/* Acknowledgement */}
+        <label style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer',
+          padding: '10px 14px', borderRadius: 10,
+          border: `1px solid ${acknowledged ? 'rgba(139,92,246,0.40)' : 'rgba(255,255,255,0.10)'}`,
+          background: acknowledged ? 'rgba(139,92,246,0.08)' : 'rgba(255,255,255,0.03)',
+          transition: 'border-color 0.2s, background 0.2s',
+        }}>
+          <input
+            type="checkbox"
+            checked={acknowledged}
+            onChange={e => setAcknowledged(e.target.checked)}
+            style={{ marginTop: 2, accentColor: '#8b5cf6', width: 15, height: 15, flexShrink: 0, cursor: 'pointer' }}
+          />
+          <span className="text-xs" style={{ color: '#b8cfeb', lineHeight: 1.6 }}>
+            I understand that once a vault is released, the release is <strong style={{ color: '#eef4ff' }}>final and irreversible</strong>.
+            This app is unaudited. This is <strong style={{ color: '#eef4ff' }}>not a legal will</strong> and creates no enforceable rights.
+          </span>
+        </label>
+
+        {/* Error */}
         {error && !isPending && !isConfirming && (
           <p className="text-sm text-[var(--danger)]">{error}</p>
         )}

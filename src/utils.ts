@@ -85,8 +85,60 @@ export function parseOnchainError(err: unknown): string {
 }
 
 export const INTERVAL_OPTIONS = [
-  { label: '2 minutes (test)', seconds: 120 },
-  { label: '7 days', seconds: 7 * 86400 },
-  { label: '30 days', seconds: 30 * 86400 },
-  { label: '90 days', seconds: 90 * 86400 },
+  { label: '2 min (test)', seconds: 120 },
+  { label: '7 days',       seconds: 7   * 86400 },
+  { label: '14 days',      seconds: 14  * 86400 },
+  { label: '30 days',      seconds: 30  * 86400 },
+  { label: '90 days',      seconds: 90  * 86400 },
+  { label: '180 days',     seconds: 180 * 86400 },
+  { label: '365 days',     seconds: 365 * 86400 },
 ] as const
+
+/** Generate an .ics calendar event string for a vault deadline. */
+export function generateIcs(vaultId: bigint, deadlineUnix: number): string {
+  const d = new Date(deadlineUnix * 1000)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const fmt = (dt: Date) =>
+    `${dt.getUTCFullYear()}${pad(dt.getUTCMonth() + 1)}${pad(dt.getUTCDate())}` +
+    `T${pad(dt.getUTCHours())}${pad(dt.getUTCMinutes())}${pad(dt.getUTCSeconds())}Z`
+  const uid = `amanahvault-${vaultId}-${deadlineUnix}@amanahvault`
+  const stamp = fmt(new Date())
+  const start = fmt(d)
+  // Alarm 1 day before
+  const alarmLines = [
+    'BEGIN:VALARM',
+    'TRIGGER:-P1D',
+    'ACTION:DISPLAY',
+    `DESCRIPTION:AmanahVault #${vaultId} check-in deadline tomorrow`,
+    'END:VALARM',
+  ].join('\r\n')
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//AmanahVault//EN',
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART:${start}`,
+    `DTEND:${start}`,
+    `SUMMARY:AmanahVault #${vaultId} — check-in deadline`,
+    `DESCRIPTION:Check in to vault #${vaultId} before this time or the vault can be released.`,
+    alarmLines,
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n')
+}
+
+/** Trigger an .ics download in the browser. */
+export function downloadIcs(vaultId: bigint, deadlineUnix: number): void {
+  const content = generateIcs(vaultId, deadlineUnix)
+  const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `amanah-vault-${vaultId}-deadline.ics`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}

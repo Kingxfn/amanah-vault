@@ -1,37 +1,44 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { erc20Abi } from 'viem'
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi'
+import { erc20Abi, parseAbiItem } from 'viem'
 import { AMANA_VAULT_ADDRESS, AMANA_VAULT_ABI } from '@/contract'
 import {
   formatUsdc, parseUsdcInput, formatAddress, formatCountdown,
-  parseOnchainError, txExplorerUrl, CHAIN_ID,
+  parseOnchainError, txExplorerUrl, CHAIN_ID, downloadIcs,
 } from '@/utils'
 import { getUsdc } from '@/onchain-facts'
 import { TxResult } from './TxResult'
-import { RefreshCw, ExternalLink, ChevronDown, ChevronUp, Users } from 'lucide-react'
+import { RefreshCw, ExternalLink, ChevronDown, ChevronUp, Users, CalendarPlus, History } from 'lucide-react'
 
 const USDC_ADDRESS = (getUsdc(CHAIN_ID)?.address ?? '0x3600000000000000000000000000000000000000') as `0x${string}`
+
+interface DepositEntry {
+  sender: string
+  amount: bigint
+  txHash: string
+}
 
 interface Props {
   vaultId: bigint
 }
 
-type ActionTab = 'deposit' | 'withdraw' | 'update' | null
+type ActionTab = 'deposit' | 'withdraw' | 'update' | 'history' | null
 
 export function VaultCard({ vaultId }: Props) {
   const { address } = useAccount()
+  const publicClient = usePublicClient({ chainId: CHAIN_ID })
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000))
   const [activeTab, setActiveTab] = useState<ActionTab>(null)
   const [amountInput, setAmountInput] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
+  const [deposits, setDeposits] = useState<DepositEntry[] | null>(null)
+  const [loadingHistory, setLoadingHistory] = useState(false)
 
-  // Countdown ticker
   useEffect(() => {
     const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000)
     return () => clearInterval(id)
   }, [])
 
-  // Read vault state
   const { data: vault, refetch: refetchVault } = useReadContract({
     address: AMANA_VAULT_ADDRESS,
     abi: AMANA_VAULT_ABI,
@@ -48,7 +55,6 @@ export function VaultCard({ vaultId }: Props) {
     chainId: CHAIN_ID,
   })
 
-  // USDC allowance
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: USDC_ADDRESS,
     abi: erc20Abi,
@@ -67,11 +73,31 @@ export function VaultCard({ vaultId }: Props) {
   const { writeContract, data: hash, isPending, reset } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
-  useEffect(() => {
-    if (isSuccess) {
-      refetchAll()
+  useEffect(() => { if (isSuccess) refetchAll() }, [isSuccess, refetchAll])
+
+  // Fetch deposit history from Deposited events
+  const fetchHistory = useCallback(async () => {
+    if (!publicClient) return
+    setLoadingHistory(true)
+    try {
+      const logs = await publicClient.getLogs({
+        address: AMANA_VAULT_ADDRESS,
+        event: parseAbiItem('event Deposited(uint256 indexed vaultId, address indexed sender, uint256 amount)'),
+        args: { vaultId },
+        fromBlock: 0n,
+        toBlock: 'latest',
+      })
+      setDeposits(logs.map(l => ({
+        sender: l.args.sender as string,
+        amount: l.args.amount as bigint,
+        txHash: l.transactionHash ?? '',
+      })))
+    } catch {
+      setDeposits([])
+    } finally {
+      setLoadingHistory(false)
     }
-  }, [isSuccess, refetchAll])
+  }, [publicClient, vaultId])
 
   if (!vault) {
     return (
@@ -86,6 +112,11 @@ export function VaultCard({ vaultId }: Props) {
   const deadline = Number(lastCheckIn) + Number(checkInInterval)
   const secondsLeft = deadline - now
   const isOverdue = secondsLeft <= 0
+
+  // Warning threshold: 14 days OR last 25% of interval, whichever is larger
+  const warningThresholdSecs = Math.max(14 * 86400, Number(checkInInterval) * 0.25)
+  const isWarning = !isOverdue && !released && secondsLeft <= warningThresholdSecs
+
   const parsedAmount = parseUsdcInput(amountInput)
   const needsApprove = activeTab === 'deposit' && parsedAmount > 0n && (allowance ?? 0n) < parsedAmount
 
@@ -114,9 +145,7 @@ export function VaultCard({ vaultId }: Props) {
       abi: AMANA_VAULT_ABI,
       functionName: 'deposit',
       args: [vaultId, parsedAmount],
-    }, {
-      onError: (e) => setTxError(parseOnchainError(e)),
-    }))
+    }, { onError: (e) => setTxError(parseOnchainError(e)) }))
   }
 
   function handleWithdraw() {
@@ -126,9 +155,7 @@ export function VaultCard({ vaultId }: Props) {
       abi: AMANA_VAULT_ABI,
       functionName: 'withdraw',
       args: [vaultId, parsedAmount],
-    }, {
-      onError: (e) => setTxError(parseOnchainError(e)),
-    }))
+    }, { onError: (e) => setTxError(parseOnchainError(e)) }))
   }
 
   function handleCheckIn() {
@@ -137,26 +164,35 @@ export function VaultCard({ vaultId }: Props) {
       abi: AMANA_VAULT_ABI,
       functionName: 'checkIn',
       args: [vaultId],
-    }, {
-      onError: (e) => setTxError(parseOnchainError(e)),
-    }))
+    }, { onError: (e) => setTxError(parseOnchainError(e)) }))
   }
 
   const statusColor = released
     ? 'text-[var(--muted)]'
     : isOverdue
     ? 'text-[var(--danger)]'
+    : isWarning
+    ? 'text-yellow-400'
     : 'text-[var(--success)]'
 
-  const statusLabel = released ? 'Released' : active ? (isOverdue ? 'Overdue' : 'Active') : 'Inactive'
+  const statusLabel = released
+    ? 'Released'
+    : active
+    ? (isOverdue ? 'Overdue' : isWarning ? 'Check in soon' : 'Active')
+    : 'Inactive'
 
-  const cardAccentClass = released ? 'card-teal' : isOverdue ? '' : 'card-blue'
+  const cardStyle: React.CSSProperties = isOverdue && !released
+    ? { boxShadow: '0 0 0 1px rgba(248,113,113,0.35), 0 8px 32px rgba(248,113,113,0.12)' }
+    : isWarning
+    ? { boxShadow: '0 0 0 1px rgba(250,204,21,0.30), 0 8px 32px rgba(250,204,21,0.08)' }
+    : {}
+
+  const cardAccentClass = released ? 'card-teal' : isOverdue ? '' : isWarning ? '' : 'card-blue'
 
   return (
-    <div className={`card space-y-4 ${cardAccentClass}`}
-      style={isOverdue && !released ? { boxShadow: '0 0 0 1px rgba(248,113,113,0.28), 0 8px 32px rgba(248,113,113,0.10)' } : {}}
-    >
-      {/* Header row */}
+    <div className={`card space-y-4 ${cardAccentClass}`} style={cardStyle}>
+
+      {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -195,11 +231,46 @@ export function VaultCard({ vaultId }: Props) {
           fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums',
           ...(isOverdue
             ? { border: '1px solid rgba(248,113,113,0.35)', background: 'rgba(248,113,113,0.08)', color: '#f87171' }
+            : isWarning
+            ? { border: '1px solid rgba(250,204,21,0.35)', background: 'rgba(250,204,21,0.07)', color: '#fde047' }
             : { border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(10,16,36,0.80)', color: '#b8cfeb' }
           ),
         }}>
-          {isOverdue ? 'Vault can be released now' : `Next check-in in ${formatCountdown(secondsLeft)}`}
+          {isOverdue
+            ? 'Vault can be released now'
+            : isWarning
+            ? `Check in soon — ${formatCountdown(secondsLeft)} remaining`
+            : `Next check-in in ${formatCountdown(secondsLeft)}`}
         </div>
+      )}
+
+      {/* Warning banner */}
+      {isWarning && !isOverdue && (
+        <div style={{
+          borderRadius: 8, padding: '8px 12px', fontSize: 12,
+          border: '1px solid rgba(250,204,21,0.28)',
+          background: 'rgba(250,204,21,0.06)',
+          color: '#fde047',
+          display: 'flex', alignItems: 'flex-start', gap: 8,
+        }}>
+          <span style={{ flexShrink: 0, marginTop: 1 }}>⚠</span>
+          <span>
+            Check-in deadline approaching. Check in now to restart the full timer.
+            Deadline: <strong>{new Date(deadline * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+          </span>
+        </div>
+      )}
+
+      {/* Calendar button */}
+      {!released && (
+        <button
+          type="button"
+          onClick={() => downloadIcs(vaultId, deadline)}
+          className="btn-ghost text-xs flex items-center gap-1.5 w-full justify-center py-1.5"
+        >
+          <CalendarPlus size={13} />
+          Add check-in deadline to calendar (.ics)
+        </button>
       )}
 
       {/* Meta */}
@@ -246,19 +317,11 @@ export function VaultCard({ vaultId }: Props) {
               <label className="label-sm">Amount to deposit (USDC)</label>
               <AmountInput value={amountInput} onChange={setAmountInput} />
               {needsApprove ? (
-                <button
-                  onClick={handleApprove}
-                  disabled={isPending || isConfirming}
-                  className="btn-primary w-full text-sm"
-                >
+                <button onClick={handleApprove} disabled={isPending || isConfirming} className="btn-primary w-full text-sm">
                   {isPending ? 'Confirm…' : 'Approve USDC'}
                 </button>
               ) : (
-                <button
-                  onClick={handleDeposit}
-                  disabled={isPending || isConfirming || parsedAmount === 0n}
-                  className="btn-primary w-full text-sm"
-                >
+                <button onClick={handleDeposit} disabled={isPending || isConfirming || parsedAmount === 0n} className="btn-primary w-full text-sm">
                   {isPending ? 'Confirm…' : 'Deposit'}
                 </button>
               )}
@@ -270,22 +333,71 @@ export function VaultCard({ vaultId }: Props) {
             <div style={{ borderRadius: 12, border: '1px solid rgba(20,184,166,0.22)', background: 'rgba(10,16,36,0.85)', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <label className="label-sm">Amount to withdraw (USDC)</label>
               <AmountInput value={amountInput} onChange={setAmountInput} />
-              <button
-                onClick={handleWithdraw}
-                disabled={isPending || isConfirming || parsedAmount === 0n}
-                className="btn-primary w-full text-sm"
-              >
+              <button onClick={handleWithdraw} disabled={isPending || isConfirming || parsedAmount === 0n} className="btn-primary w-full text-sm">
                 {isPending ? 'Confirm…' : 'Withdraw'}
               </button>
             </div>
           )}
 
-          {/* Update beneficiaries panel */}
+          {/* Update beneficiaries */}
           {activeTab === 'update' && (
             <UpdateBeneficiariesPanel vaultId={vaultId} onDone={() => setActiveTab(null)} />
           )}
         </div>
       )}
+
+      {/* Deposit history */}
+      <div>
+        <button
+          type="button"
+          onClick={() => {
+            if (activeTab === 'history') {
+              setActiveTab(null)
+            } else {
+              setActiveTab('history')
+              if (deposits === null) void fetchHistory()
+            }
+          }}
+          className={`btn-ghost text-xs flex items-center gap-1.5 w-full justify-center py-1.5 ${activeTab === 'history' ? 'border-[var(--accent)] text-[var(--accent)]' : ''}`}
+        >
+          <History size={13} />
+          Deposit history
+          {activeTab === 'history' ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
+
+        {activeTab === 'history' && (
+          <div style={{ marginTop: 8, borderRadius: 10, border: '1px solid rgba(59,130,246,0.18)', background: 'rgba(10,16,36,0.85)', padding: '10px 12px' }}>
+            {loadingHistory ? (
+              <p className="text-xs text-[var(--muted)] text-center py-2">Loading…</p>
+            ) : !deposits || deposits.length === 0 ? (
+              <p className="text-xs text-[var(--muted)] text-center py-2">No deposits found.</p>
+            ) : (
+              <div className="space-y-2">
+                {deposits.map((d, i) => (
+                  <div key={i} className="flex items-center justify-between gap-2 text-xs">
+                    <div>
+                      <span className="font-mono text-[var(--ink-2)]">{formatAddress(d.sender)}</span>
+                      <span className="text-[var(--muted)] ml-1.5">→</span>
+                      <span className="tabular-nums font-medium text-[var(--success)] ml-1.5">+{formatUsdc(d.amount)} USDC</span>
+                    </div>
+                    {d.txHash && (
+                      <a
+                        href={txExplorerUrl(d.txHash)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[var(--muted)] hover:text-[var(--accent-hover)] transition-colors flex items-center gap-0.5"
+                        title="View on explorer"
+                      >
+                        <ExternalLink size={11} />
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Tx feedback */}
       <TxResult
@@ -331,19 +443,13 @@ function AmountInput({ value, onChange }: { value: string; onChange: (v: string)
   )
 }
 
-function UpdateBeneficiariesPanel({
-  vaultId,
-  onDone,
-}: {
-  vaultId: bigint
-  onDone: () => void
-}) {
+function UpdateBeneficiariesPanel({ vaultId, onDone }: { vaultId: bigint; onDone: () => void }) {
   const [rows, setRows] = useState([{ wallet: '', pct: '100' }])
   const [err, setErr] = useState<string | null>(null)
   const { writeContract, data: hash, isPending, reset } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
-  useEffect(() => { if (isSuccess) { onDone() } }, [isSuccess, onDone])
+  useEffect(() => { if (isSuccess) onDone() }, [isSuccess, onDone])
 
   const totalPct = rows.reduce((s, r) => s + (parseFloat(r.pct) || 0), 0)
   const sharesOk = Math.abs(totalPct - 100) < 0.001
@@ -371,11 +477,7 @@ function UpdateBeneficiariesPanel({
       address: AMANA_VAULT_ADDRESS,
       abi: AMANA_VAULT_ABI,
       functionName: 'updateBeneficiaries',
-      args: [
-        vaultId,
-        rows.map(r => r.wallet as `0x${string}`),
-        rawBps.map(b => b) as unknown as readonly number[],
-      ],
+      args: [vaultId, rows.map(r => r.wallet as `0x${string}`), rawBps.map(b => b) as unknown as readonly number[]],
     }, { onError: (e) => setErr(parseOnchainError(e)) })
   }
 
@@ -384,24 +486,13 @@ function UpdateBeneficiariesPanel({
       <p className="label-sm">Update beneficiaries</p>
       {rows.map((row, i) => (
         <div key={i} className="flex gap-2 items-start">
-          <input
-            type="text"
-            placeholder="0x address"
-            value={row.wallet}
+          <input type="text" placeholder="0x address" value={row.wallet}
             onChange={e => updateRow(i, 'wallet', e.target.value)}
-            className="input flex-1 font-mono text-xs"
-            spellCheck={false}
-          />
+            className="input flex-1 font-mono text-xs" spellCheck={false} />
           <div className="relative w-20 shrink-0">
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              value={row.pct}
+            <input type="number" min="0" max="100" step="0.01" value={row.pct}
               onChange={e => updateRow(i, 'pct', e.target.value)}
-              className="input w-full pr-5 tabular-nums"
-            />
+              className="input w-full pr-5 tabular-nums" />
             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-[var(--muted)] pointer-events-none">%</span>
           </div>
           {rows.length > 1 && (
@@ -412,19 +503,13 @@ function UpdateBeneficiariesPanel({
         </div>
       ))}
       {rows.length < 10 && (
-        <button type="button" onClick={addRow} className="btn-ghost text-xs flex items-center gap-1">
-          + Add beneficiary
-        </button>
+        <button type="button" onClick={addRow} className="btn-ghost text-xs flex items-center gap-1">+ Add beneficiary</button>
       )}
       <div className={`text-xs tabular-nums font-medium ${sharesOk ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`}>
         Total: {totalPct.toFixed(2)}%
       </div>
       {err && <p className="text-xs text-[var(--danger)]">{err}</p>}
-      <button
-        onClick={handleSubmit}
-        disabled={isPending || isConfirming}
-        className="btn-primary w-full text-sm"
-      >
+      <button onClick={handleSubmit} disabled={isPending || isConfirming} className="btn-primary w-full text-sm">
         {isPending ? 'Confirm…' : isConfirming ? 'Confirming…' : 'Save changes'}
       </button>
       <TxResult hash={hash} isPending={isPending} isConfirming={isConfirming} isSuccess={isSuccess} successMsg="Beneficiaries updated!" />
