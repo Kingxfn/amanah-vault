@@ -1,49 +1,200 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+// node_modules/@openzeppelin/contracts/utils/Errors.sol
+
 // OpenZeppelin Contracts (last updated v5.1.0) (utils/Errors.sol)
 
+/**
+ * @dev Collection of common custom errors used in multiple contracts
+ *
+ * IMPORTANT: Backwards compatibility is not guaranteed in future versions of the library.
+ * It is recommended to avoid relying on the error API for critical functionality.
+ *
+ * _Available since v5.1._
+ */
 library Errors {
+    /**
+     * @dev The ETH balance of the account is not enough to perform the operation.
+     */
     error InsufficientBalance(uint256 balance, uint256 needed);
+
+    /**
+     * @dev A call to an address target failed. The target may have reverted.
+     */
     error FailedCall();
+
+    /**
+     * @dev The deployment failed.
+     */
     error FailedDeployment();
+
+    /**
+     * @dev A necessary precompile is missing.
+     */
     error MissingPrecompile(address);
 }
 
+// node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol
+
 // OpenZeppelin Contracts (last updated v5.1.0) (utils/introspection/IERC165.sol)
 
+/**
+ * @dev Interface of the ERC-165 standard, as defined in the
+ * https://eips.ethereum.org/EIPS/eip-165[ERC].
+ *
+ * Implementers can declare support of contract interfaces, which can then be
+ * queried by others ({ERC165Checker}).
+ *
+ * For an implementation, see {ERC165}.
+ */
 interface IERC165 {
+    /**
+     * @dev Returns true if this contract implements the interface defined by
+     * `interfaceId`. See the corresponding
+     * https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[ERC section]
+     * to learn more about how these ids are created.
+     *
+     * This function call must use less than 30 000 gas.
+     */
     function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }
 
+// node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol
+
 // OpenZeppelin Contracts (last updated v5.1.0) (token/ERC20/IERC20.sol)
 
+/**
+ * @dev Interface of the ERC-20 standard as defined in the ERC.
+ */
 interface IERC20 {
+    /**
+     * @dev Emitted when `value` tokens are moved from one account (`from`) to
+     * another (`to`).
+     *
+     * Note that `value` may be zero.
+     */
     event Transfer(address indexed from, address indexed to, uint256 value);
+
+    /**
+     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+     * a call to {approve}. `value` is the new allowance.
+     */
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
+    /**
+     * @dev Returns the value of tokens in existence.
+     */
     function totalSupply() external view returns (uint256);
+
+    /**
+     * @dev Returns the value of tokens owned by `account`.
+     */
     function balanceOf(address account) external view returns (uint256);
+
+    /**
+     * @dev Moves a `value` amount of tokens from the caller's account to `to`.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
     function transfer(address to, uint256 value) external returns (bool);
+
+    /**
+     * @dev Returns the remaining number of tokens that `spender` will be
+     * allowed to spend on behalf of `owner` through {transferFrom}. This is
+     * zero by default.
+     *
+     * This value changes when {approve} or {transferFrom} are called.
+     */
     function allowance(address owner, address spender) external view returns (uint256);
+
+    /**
+     * @dev Sets a `value` amount of tokens as the allowance of `spender` over the
+     * caller's tokens.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * IMPORTANT: Beware that changing an allowance with this method brings the risk
+     * that someone may use both the old and the new allowance by unfortunate
+     * transaction ordering. One possible solution to mitigate this race
+     * condition is to first reduce the spender's allowance to 0 and set the
+     * desired value afterwards:
+     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+     *
+     * Emits an {Approval} event.
+     */
     function approve(address spender, uint256 value) external returns (bool);
+
+    /**
+     * @dev Moves a `value` amount of tokens from `from` to `to` using the
+     * allowance mechanism. `value` is then deducted from the caller's
+     * allowance.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
     function transferFrom(address from, address to, uint256 value) external returns (bool);
 }
 
+// node_modules/@openzeppelin/contracts/utils/ReentrancyGuard.sol
+
 // OpenZeppelin Contracts (last updated v5.1.0) (utils/ReentrancyGuard.sol)
 
+/**
+ * @dev Contract module that helps prevent reentrant calls to a function.
+ *
+ * Inheriting from `ReentrancyGuard` will make the {nonReentrant} modifier
+ * available, which can be applied to functions to make sure there are no nested
+ * (reentrant) calls to them.
+ *
+ * Note that because there is a single `nonReentrant` guard, functions marked as
+ * `nonReentrant` may not call one another. This can be worked around by making
+ * those functions `private`, and then adding `external` `nonReentrant` entry
+ * points to them.
+ *
+ * TIP: If EIP-1153 (transient storage) is available on the chain you're deploying at,
+ * consider using {ReentrancyGuardTransient} instead.
+ *
+ * TIP: If you would like to learn more about reentrancy and alternative ways
+ * to protect against it, check out our blog post
+ * https://blog.openzeppelin.com/reentrancy-after-istanbul/[Reentrancy After Istanbul].
+ */
 abstract contract ReentrancyGuard {
+    // Booleans are more expensive than uint256 or any type that takes up a full
+    // word because each write operation emits an extra SLOAD to first read the
+    // slot's contents, replace the bits taken up by the boolean, and then write
+    // back. This is the compiler's defense against contract upgrades and
+    // pointer aliasing, and it cannot be disabled.
+
+    // The values being non-zero value makes deployment a bit more expensive,
+    // but in exchange the refund on every call to nonReentrant will be lower in
+    // amount. Since refunds are capped to a percentage of the total
+    // transaction's gas, it is best to keep them low in cases like this one, to
+    // increase the likelihood of the full refund coming into effect.
     uint256 private constant NOT_ENTERED = 1;
     uint256 private constant ENTERED = 2;
 
     uint256 private _status;
 
+    /**
+     * @dev Unauthorized reentrant call.
+     */
     error ReentrancyGuardReentrantCall();
 
     constructor() {
         _status = NOT_ENTERED;
     }
 
+    /**
+     * @dev Prevents a contract from calling itself, directly or indirectly.
+     * Calling a `nonReentrant` function from another `nonReentrant`
+     * function is not supported. It is possible to prevent this from happening
+     * by making the `nonReentrant` function external, and making it call a
+     * `private` function that does the actual work.
+     */
     modifier nonReentrant() {
         _nonReentrantBefore();
         _;
@@ -51,40 +202,101 @@ abstract contract ReentrancyGuard {
     }
 
     function _nonReentrantBefore() private {
+        // On the first call to nonReentrant, _status will be NOT_ENTERED
         if (_status == ENTERED) {
             revert ReentrancyGuardReentrantCall();
         }
+
+        // Any calls to nonReentrant after this point will fail
         _status = ENTERED;
     }
 
     function _nonReentrantAfter() private {
+        // By storing the original value once again, a refund is triggered (see
+        // https://eips.ethereum.org/EIPS/eip-2200)
         _status = NOT_ENTERED;
     }
 
+    /**
+     * @dev Returns true if the reentrancy guard is currently set to "entered", which indicates there is a
+     * `nonReentrant` function in the call stack.
+     */
     function _reentrancyGuardEntered() internal view returns (bool) {
         return _status == ENTERED;
     }
 }
 
+// node_modules/@openzeppelin/contracts/utils/Address.sol
+
 // OpenZeppelin Contracts (last updated v5.1.0) (utils/Address.sol)
 
+/**
+ * @dev Collection of functions related to the address type
+ */
 library Address {
+    /**
+     * @dev There's no code at `target` (it is not a contract).
+     */
     error AddressEmptyCode(address target);
 
+    /**
+     * @dev Replacement for Solidity's `transfer`: sends `amount` wei to
+     * `recipient`, forwarding all available gas and reverting on errors.
+     *
+     * https://eips.ethereum.org/EIPS/eip-1884[EIP1884] increases the gas cost
+     * of certain opcodes, possibly making contracts go over the 2300 gas limit
+     * imposed by `transfer`, making them unable to receive funds via
+     * `transfer`. {sendValue} removes this limitation.
+     *
+     * https://consensys.net/diligence/blog/2019/09/stop-using-soliditys-transfer-now/[Learn more].
+     *
+     * IMPORTANT: because control is transferred to `recipient`, care must be
+     * taken to not create reentrancy vulnerabilities. Consider using
+     * {ReentrancyGuard} or the
+     * https://solidity.readthedocs.io/en/v0.8.20/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
+     */
     function sendValue(address payable recipient, uint256 amount) internal {
         if (address(this).balance < amount) {
             revert Errors.InsufficientBalance(address(this).balance, amount);
         }
+
         (bool success, ) = recipient.call{value: amount}("");
         if (!success) {
             revert Errors.FailedCall();
         }
     }
 
+    /**
+     * @dev Performs a Solidity function call using a low level `call`. A
+     * plain `call` is an unsafe replacement for a function call: use this
+     * function instead.
+     *
+     * If `target` reverts with a revert reason or custom error, it is bubbled
+     * up by this function (like regular Solidity function calls). However, if
+     * the call reverted with no returned reason, this function reverts with a
+     * {Errors.FailedCall} error.
+     *
+     * Returns the raw returned data. To convert to the expected return value,
+     * use https://solidity.readthedocs.io/en/latest/units-and-global-variables.html?highlight=abi.decode#abi-encoding-and-decoding-functions[`abi.decode`].
+     *
+     * Requirements:
+     *
+     * - `target` must be a contract.
+     * - calling `target` with `data` must not revert.
+     */
     function functionCall(address target, bytes memory data) internal returns (bytes memory) {
         return functionCallWithValue(target, data, 0);
     }
 
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
+     * but also transferring `value` wei to `target`.
+     *
+     * Requirements:
+     *
+     * - the calling contract must have an ETH balance of at least `value`.
+     * - the called Solidity function must be `payable`.
+     */
     function functionCallWithValue(address target, bytes memory data, uint256 value) internal returns (bytes memory) {
         if (address(this).balance < value) {
             revert Errors.InsufficientBalance(address(this).balance, value);
@@ -93,16 +305,29 @@ library Address {
         return verifyCallResultFromTarget(target, success, returndata);
     }
 
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
+     * but performing a static call.
+     */
     function functionStaticCall(address target, bytes memory data) internal view returns (bytes memory) {
         (bool success, bytes memory returndata) = target.staticcall(data);
         return verifyCallResultFromTarget(target, success, returndata);
     }
 
+    /**
+     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
+     * but performing a delegate call.
+     */
     function functionDelegateCall(address target, bytes memory data) internal returns (bytes memory) {
         (bool success, bytes memory returndata) = target.delegatecall(data);
         return verifyCallResultFromTarget(target, success, returndata);
     }
 
+    /**
+     * @dev Tool to verify that a low level call to smart-contract was successful, and reverts if the target
+     * was not a contract or bubbling up the revert reason (falling back to {Errors.FailedCall}) in case
+     * of an unsuccessful call.
+     */
     function verifyCallResultFromTarget(
         address target,
         bool success,
@@ -111,6 +336,8 @@ library Address {
         if (!success) {
             _revert(returndata);
         } else {
+            // only check if target is a contract if the call was successful and the return data is empty
+            // otherwise we already know that it was a contract
             if (returndata.length == 0 && target.code.length == 0) {
                 revert AddressEmptyCode(target);
             }
@@ -118,6 +345,10 @@ library Address {
         }
     }
 
+    /**
+     * @dev Tool to verify that a low level call was successful, and reverts if it wasn't, either by bubbling the
+     * revert reason or with a default {Errors.FailedCall} error.
+     */
     function verifyCallResult(bool success, bytes memory returndata) internal pure returns (bytes memory) {
         if (!success) {
             _revert(returndata);
@@ -126,8 +357,13 @@ library Address {
         }
     }
 
+    /**
+     * @dev Reverts with returndata if present. Otherwise reverts with {Errors.FailedCall}.
+     */
     function _revert(bytes memory returndata) private pure {
+        // Look for revert reason and bubble it up if present
         if (returndata.length > 0) {
+            // The easiest way to bubble the revert reason is using memory via assembly
             assembly ("memory-safe") {
                 let returndata_size := mload(returndata)
                 revert(add(32, returndata), returndata_size)
@@ -138,36 +374,160 @@ library Address {
     }
 }
 
+// node_modules/@openzeppelin/contracts/interfaces/IERC165.sol
+
+// OpenZeppelin Contracts (last updated v5.0.0) (interfaces/IERC165.sol)
+
+// node_modules/@openzeppelin/contracts/interfaces/IERC20.sol
+
+// OpenZeppelin Contracts (last updated v5.0.0) (interfaces/IERC20.sol)
+
+// node_modules/@openzeppelin/contracts/interfaces/IERC1363.sol
+
 // OpenZeppelin Contracts (last updated v5.1.0) (interfaces/IERC1363.sol)
 
+/**
+ * @title IERC1363
+ * @dev Interface of the ERC-1363 standard as defined in the https://eips.ethereum.org/EIPS/eip-1363[ERC-1363].
+ *
+ * Defines an extension interface for ERC-20 tokens that supports executing code on a recipient contract
+ * after `transfer` or `transferFrom`, or code on a spender contract after `approve`, in a single transaction.
+ */
 interface IERC1363 is IERC20, IERC165 {
+    /*
+     * Note: the ERC-165 identifier for this interface is 0xb0202a11.
+     * 0xb0202a11 ===
+     *   bytes4(keccak256('transferAndCall(address,uint256)')) ^
+     *   bytes4(keccak256('transferAndCall(address,uint256,bytes)')) ^
+     *   bytes4(keccak256('transferFromAndCall(address,address,uint256)')) ^
+     *   bytes4(keccak256('transferFromAndCall(address,address,uint256,bytes)')) ^
+     *   bytes4(keccak256('approveAndCall(address,uint256)')) ^
+     *   bytes4(keccak256('approveAndCall(address,uint256,bytes)'))
+     */
+
+    /**
+     * @dev Moves a `value` amount of tokens from the caller's account to `to`
+     * and then calls {IERC1363Receiver-onTransferReceived} on `to`.
+     * @param to The address which you want to transfer to.
+     * @param value The amount of tokens to be transferred.
+     * @return A boolean value indicating whether the operation succeeded unless throwing.
+     */
     function transferAndCall(address to, uint256 value) external returns (bool);
+
+    /**
+     * @dev Moves a `value` amount of tokens from the caller's account to `to`
+     * and then calls {IERC1363Receiver-onTransferReceived} on `to`.
+     * @param to The address which you want to transfer to.
+     * @param value The amount of tokens to be transferred.
+     * @param data Additional data with no specified format, sent in call to `to`.
+     * @return A boolean value indicating whether the operation succeeded unless throwing.
+     */
     function transferAndCall(address to, uint256 value, bytes calldata data) external returns (bool);
+
+    /**
+     * @dev Moves a `value` amount of tokens from `from` to `to` using the allowance mechanism
+     * and then calls {IERC1363Receiver-onTransferReceived} on `to`.
+     * @param from The address which you want to send tokens from.
+     * @param to The address which you want to transfer to.
+     * @param value The amount of tokens to be transferred.
+     * @return A boolean value indicating whether the operation succeeded unless throwing.
+     */
     function transferFromAndCall(address from, address to, uint256 value) external returns (bool);
+
+    /**
+     * @dev Moves a `value` amount of tokens from `from` to `to` using the allowance mechanism
+     * and then calls {IERC1363Receiver-onTransferReceived} on `to`.
+     * @param from The address which you want to send tokens from.
+     * @param to The address which you want to transfer to.
+     * @param value The amount of tokens to be transferred.
+     * @param data Additional data with no specified format, sent in call to `to`.
+     * @return A boolean value indicating whether the operation succeeded unless throwing.
+     */
     function transferFromAndCall(address from, address to, uint256 value, bytes calldata data) external returns (bool);
+
+    /**
+     * @dev Sets a `value` amount of tokens as the allowance of `spender` over the
+     * caller's tokens and then calls {IERC1363Spender-onApprovalReceived} on `spender`.
+     * @param spender The address which will spend the funds.
+     * @param value The amount of tokens to be spent.
+     * @return A boolean value indicating whether the operation succeeded unless throwing.
+     */
     function approveAndCall(address spender, uint256 value) external returns (bool);
+
+    /**
+     * @dev Sets a `value` amount of tokens as the allowance of `spender` over the
+     * caller's tokens and then calls {IERC1363Spender-onApprovalReceived} on `spender`.
+     * @param spender The address which will spend the funds.
+     * @param value The amount of tokens to be spent.
+     * @param data Additional data with no specified format, sent in call to `spender`.
+     * @return A boolean value indicating whether the operation succeeded unless throwing.
+     */
     function approveAndCall(address spender, uint256 value, bytes calldata data) external returns (bool);
 }
 
+// node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
+
 // OpenZeppelin Contracts (last updated v5.1.0) (token/ERC20/utils/SafeERC20.sol)
 
+/**
+ * @title SafeERC20
+ * @dev Wrappers around ERC-20 operations that throw on failure (when the token
+ * contract returns false). Tokens that return no value (and instead revert or
+ * throw on failure) are also supported, non-reverting calls are assumed to be
+ * successful.
+ * To use this library you can add a `using SafeERC20 for IERC20;` statement to your contract,
+ * which allows you to call the safe operations as `token.safeTransfer(...)`, etc.
+ */
 library SafeERC20 {
+    /**
+     * @dev An operation with an ERC-20 token failed.
+     */
     error SafeERC20FailedOperation(address token);
+
+    /**
+     * @dev Indicates a failed `decreaseAllowance` request.
+     */
     error SafeERC20FailedDecreaseAllowance(address spender, uint256 currentAllowance, uint256 requestedDecrease);
 
+    /**
+     * @dev Transfer `value` amount of `token` from the calling contract to `to`. If `token` returns no value,
+     * non-reverting calls are assumed to be successful.
+     */
     function safeTransfer(IERC20 token, address to, uint256 value) internal {
         _callOptionalReturn(token, abi.encodeCall(token.transfer, (to, value)));
     }
 
+    /**
+     * @dev Transfer `value` amount of `token` from `from` to `to`, spending the approval given by `from` to the
+     * calling contract. If `token` returns no value, non-reverting calls are assumed to be successful.
+     */
     function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
         _callOptionalReturn(token, abi.encodeCall(token.transferFrom, (from, to, value)));
     }
 
+    /**
+     * @dev Increase the calling contract's allowance toward `spender` by `value`. If `token` returns no value,
+     * non-reverting calls are assumed to be successful.
+     *
+     * IMPORTANT: If the token implements ERC-7674 (ERC-20 with temporary allowance), and if the "client"
+     * smart contract uses ERC-7674 to set temporary allowances, then the "client" smart contract should avoid using
+     * this function. Performing a {safeIncreaseAllowance} or {safeDecreaseAllowance} operation on a token contract
+     * that has a non-zero temporary allowance (for that particular owner-spender) will result in unexpected behavior.
+     */
     function safeIncreaseAllowance(IERC20 token, address spender, uint256 value) internal {
         uint256 oldAllowance = token.allowance(address(this), spender);
         forceApprove(token, spender, oldAllowance + value);
     }
 
+    /**
+     * @dev Decrease the calling contract's allowance toward `spender` by `requestedDecrease`. If `token` returns no
+     * value, non-reverting calls are assumed to be successful.
+     *
+     * IMPORTANT: If the token implements ERC-7674 (ERC-20 with temporary allowance), and if the "client"
+     * smart contract uses ERC-7674 to set temporary allowances, then the "client" smart contract should avoid using
+     * this function. Performing a {safeIncreaseAllowance} or {safeDecreaseAllowance} operation on a token contract
+     * that has a non-zero temporary allowance (for that particular owner-spender) will result in unexpected behavior.
+     */
     function safeDecreaseAllowance(IERC20 token, address spender, uint256 requestedDecrease) internal {
         unchecked {
             uint256 currentAllowance = token.allowance(address(this), spender);
@@ -178,14 +538,31 @@ library SafeERC20 {
         }
     }
 
+    /**
+     * @dev Set the calling contract's allowance toward `spender` to `value`. If `token` returns no value,
+     * non-reverting calls are assumed to be successful. Meant to be used with tokens that require the approval
+     * to be set to zero before setting it to a non-zero value, such as USDT.
+     *
+     * NOTE: If the token implements ERC-7674, this function will not modify any temporary allowance. This function
+     * only sets the "standard" allowance. Any temporary allowance will remain active, in addition to the value being
+     * set here.
+     */
     function forceApprove(IERC20 token, address spender, uint256 value) internal {
         bytes memory approvalCall = abi.encodeCall(token.approve, (spender, value));
+
         if (!_callOptionalReturnBool(token, approvalCall)) {
             _callOptionalReturn(token, abi.encodeCall(token.approve, (spender, 0)));
             _callOptionalReturn(token, approvalCall);
         }
     }
 
+    /**
+     * @dev Performs an {ERC1363} transferAndCall, with a fallback to the simple {ERC20} transfer if the target has no
+     * code. This can be used to implement an {ERC721}-like safe transfer that rely on {ERC1363} checks when
+     * targeting contracts.
+     *
+     * Reverts if the returned value is other than `true`.
+     */
     function transferAndCallRelaxed(IERC1363 token, address to, uint256 value, bytes memory data) internal {
         if (to.code.length == 0) {
             safeTransfer(token, to, value);
@@ -194,6 +571,13 @@ library SafeERC20 {
         }
     }
 
+    /**
+     * @dev Performs an {ERC1363} transferFromAndCall, with a fallback to the simple {ERC20} transferFrom if the target
+     * has no code. This can be used to implement an {ERC721}-like safe transfer that rely on {ERC1363} checks when
+     * targeting contracts.
+     *
+     * Reverts if the returned value is other than `true`.
+     */
     function transferFromAndCallRelaxed(
         IERC1363 token,
         address from,
@@ -208,6 +592,17 @@ library SafeERC20 {
         }
     }
 
+    /**
+     * @dev Performs an {ERC1363} approveAndCall, with a fallback to the simple {ERC20} approve if the target has no
+     * code. This can be used to implement an {ERC721}-like safe transfer that rely on {ERC1363} checks when
+     * targeting contracts.
+     *
+     * NOTE: When the recipient address (`to`) has no code (i.e. is an EOA), this function behaves as {forceApprove}.
+     * Opposedly, when the recipient address (`to`) has code, this function only attempts to call {ERC1363-approveAndCall}
+     * once without retrying, and relies on the returned value to be true.
+     *
+     * Reverts if the returned value is other than `true`.
+     */
     function approveAndCallRelaxed(IERC1363 token, address to, uint256 value, bytes memory data) internal {
         if (to.code.length == 0) {
             forceApprove(token, to, value);
@@ -216,11 +611,20 @@ library SafeERC20 {
         }
     }
 
+    /**
+     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement
+     * on the return value: the return value is optional (but if data is returned, it must not be false).
+     * @param token The token targeted by the call.
+     * @param data The call data (encoded using abi.encode or one of its variants).
+     *
+     * This is a variant of {_callOptionalReturnBool} that reverts if call fails to meet the requirements.
+     */
     function _callOptionalReturn(IERC20 token, bytes memory data) private {
         uint256 returnSize;
         uint256 returnValue;
         assembly ("memory-safe") {
             let success := call(gas(), token, 0, add(data, 0x20), mload(data), 0, 0x20)
+            // bubble errors
             if iszero(success) {
                 let ptr := mload(0x40)
                 returndatacopy(ptr, 0, returndatasize())
@@ -229,11 +633,20 @@ library SafeERC20 {
             returnSize := returndatasize()
             returnValue := mload(0)
         }
+
         if (returnSize == 0 ? address(token).code.length == 0 : returnValue != 1) {
             revert SafeERC20FailedOperation(address(token));
         }
     }
 
+    /**
+     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement
+     * on the return value: the return value is optional (but if data is returned, it must not be false).
+     * @param token The token targeted by the call.
+     * @param data The call data (encoded using abi.encode or one of its variants).
+     *
+     * This is a variant of {_callOptionalReturn} that silently catches all reverts and returns a bool instead.
+     */
     function _callOptionalReturnBool(IERC20 token, bytes memory data) private returns (bool) {
         bool success;
         uint256 returnSize;
@@ -247,22 +660,22 @@ library SafeERC20 {
     }
 }
 
-// AmanahVault — multi-tenant dead-man's-switch USDC inheritance vault
-// USDC on Arc Testnet + Mainnet: 0x3600000000000000000000000000000000000000
-// No admin keys. No upgradeability. No yield, interest, staking, or lending.
+// contracts/AmanahVault.sol
 
 contract AmanahVault is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     struct Beneficiary {
         address wallet;
-        uint16 shareBps; // basis points; per-vault sum must equal 10000
+        uint16 shareBps;
     }
 
     struct Vault {
         address owner;
         uint256 lastCheckIn;
         uint256 checkInInterval;
+        uint256 pendingWindow;
+        uint256 pendingSince;
         bool released;
         bool active;
     }
@@ -270,10 +683,15 @@ contract AmanahVault is ReentrancyGuard {
     error ZeroAddress();
     error ZeroAmount();
     error ZeroInterval();
+    error PendingWindowTooShort();
+    error PendingWindowTooLong();
     error NotOwner();
     error NotActive();
     error AlreadyReleased();
-    error TooSoon();
+    error NotOverdue();
+    error AlreadyPending();
+    error NotPending();
+    error PendingWindowNotElapsed();
     error InvalidShares();
     error InvalidBeneficiaryCount();
     error ArrayLengthMismatch();
@@ -282,17 +700,27 @@ contract AmanahVault is ReentrancyGuard {
 
     IERC20 public immutable usdc;
     uint256 public vaultCount;
+    uint256 public constant MIN_PENDING_WINDOW = 60;
+    uint256 public constant MAX_PENDING_WINDOW = 30 * 86400;
 
     mapping(uint256 => Vault) public vaults;
     mapping(uint256 => Beneficiary[]) public beneficiaries;
     mapping(uint256 => mapping(address => uint256)) public claimable;
     mapping(uint256 => uint256) public vaultBalance;
 
-    event VaultCreated(uint256 indexed vaultId, address indexed owner, uint256 checkInInterval, uint256 beneficiaryCount);
+    event VaultCreated(
+        uint256 indexed vaultId,
+        address indexed owner,
+        uint256 checkInInterval,
+        uint256 pendingWindow,
+        uint256 beneficiaryCount
+    );
     event Deposited(uint256 indexed vaultId, address indexed sender, uint256 amount);
     event CheckedIn(uint256 indexed vaultId, address indexed owner, uint256 timestamp);
     event Withdrawn(uint256 indexed vaultId, address indexed owner, uint256 amount);
     event BeneficiariesUpdated(uint256 indexed vaultId, address indexed owner, uint256 beneficiaryCount);
+    event PendingReleaseStarted(uint256 indexed vaultId, address indexed caller, uint256 pendingSince, uint256 pendingWindow);
+    event ReleaseCancelled(uint256 indexed vaultId, address indexed owner);
     event Released(uint256 indexed vaultId, address indexed caller, uint256 totalDistributed, uint256 beneficiaryCount);
     event Claimed(uint256 indexed vaultId, address indexed beneficiary, uint256 amount);
 
@@ -304,9 +732,12 @@ contract AmanahVault is ReentrancyGuard {
     function createVault(
         address[] memory _beneficiaryWallets,
         uint16[] memory _shareBps,
-        uint256 _checkInInterval
+        uint256 _checkInInterval,
+        uint256 _pendingWindow
     ) external returns (uint256 vaultId) {
         if (_checkInInterval == 0) revert ZeroInterval();
+        if (_pendingWindow < MIN_PENDING_WINDOW) revert PendingWindowTooShort();
+        if (_pendingWindow > MAX_PENDING_WINDOW) revert PendingWindowTooLong();
 
         vaultId = ++vaultCount;
 
@@ -314,13 +745,15 @@ contract AmanahVault is ReentrancyGuard {
             owner: msg.sender,
             lastCheckIn: block.timestamp,
             checkInInterval: _checkInInterval,
+            pendingWindow: _pendingWindow,
+            pendingSince: 0,
             released: false,
             active: true
         });
 
         _validateAndSetBeneficiaries(vaultId, _beneficiaryWallets, _shareBps);
 
-        emit VaultCreated(vaultId, msg.sender, _checkInInterval, _beneficiaryWallets.length);
+        emit VaultCreated(vaultId, msg.sender, _checkInInterval, _pendingWindow, _beneficiaryWallets.length);
     }
 
     function deposit(uint256 vaultId, uint256 amount) external nonReentrant {
@@ -345,6 +778,14 @@ contract AmanahVault is ReentrancyGuard {
         if (msg.sender != vault.owner) revert NotOwner();
         if (!vault.active) revert NotActive();
 
+        // Cancel a pending release only while the pending window is still open.
+        // Once the window has elapsed the owner can no longer race a finalizeRelease.
+        if (vault.pendingSince != 0) {
+            if (block.timestamp >= vault.pendingSince + vault.pendingWindow) revert PendingWindowNotElapsed();
+            vault.pendingSince = 0;
+            emit ReleaseCancelled(vaultId, msg.sender);
+        }
+
         vault.lastCheckIn = block.timestamp;
 
         emit CheckedIn(vaultId, msg.sender, block.timestamp);
@@ -357,6 +798,9 @@ contract AmanahVault is ReentrancyGuard {
         if (msg.sender != vault.owner) revert NotOwner();
         if (!vault.active) revert NotActive();
         if (vault.released) revert AlreadyReleased();
+        // Lock owner mutations once the pending window has expired.
+        if (vault.pendingSince != 0 && block.timestamp >= vault.pendingSince + vault.pendingWindow)
+            revert PendingWindowNotElapsed();
         if (amount == 0) revert ZeroAmount();
 
         vaultBalance[vaultId] -= amount;
@@ -365,17 +809,16 @@ contract AmanahVault is ReentrancyGuard {
         emit Withdrawn(vaultId, msg.sender, amount);
     }
 
-    function updateBeneficiaries(
-        uint256 vaultId,
-        address[] memory _wallets,
-        uint16[] memory _shareBps
-    ) external {
+    function updateBeneficiaries(uint256 vaultId, address[] memory _wallets, uint16[] memory _shareBps) external {
         _requireVaultExists(vaultId);
 
         Vault storage vault = vaults[vaultId];
         if (msg.sender != vault.owner) revert NotOwner();
         if (!vault.active) revert NotActive();
         if (vault.released) revert AlreadyReleased();
+        // Lock owner mutations once the pending window has expired.
+        if (vault.pendingSince != 0 && block.timestamp >= vault.pendingSince + vault.pendingWindow)
+            revert PendingWindowNotElapsed();
 
         delete beneficiaries[vaultId];
         _validateAndSetBeneficiaries(vaultId, _wallets, _shareBps);
@@ -383,15 +826,29 @@ contract AmanahVault is ReentrancyGuard {
         emit BeneficiariesUpdated(vaultId, msg.sender, _wallets.length);
     }
 
-    function release(uint256 vaultId) external nonReentrant {
+    function startRelease(uint256 vaultId) external {
         _requireVaultExists(vaultId);
 
         Vault storage vault = vaults[vaultId];
         if (vault.released) revert AlreadyReleased();
         if (!vault.active) revert NotActive();
-        if (block.timestamp < vault.lastCheckIn + vault.checkInInterval) revert TooSoon();
+        if (block.timestamp < vault.lastCheckIn + vault.checkInInterval) revert NotOverdue();
+        if (vault.pendingSince != 0) revert AlreadyPending();
 
-        // Checks-effects-interactions: flip state before any token interaction
+        vault.pendingSince = block.timestamp;
+
+        emit PendingReleaseStarted(vaultId, msg.sender, vault.pendingSince, vault.pendingWindow);
+    }
+
+    function finalizeRelease(uint256 vaultId) external nonReentrant {
+        _requireVaultExists(vaultId);
+
+        Vault storage vault = vaults[vaultId];
+        if (vault.released) revert AlreadyReleased();
+        if (!vault.active) revert NotActive();
+        if (vault.pendingSince == 0) revert NotPending();
+        if (block.timestamp < vault.pendingSince + vault.pendingWindow) revert PendingWindowNotElapsed();
+
         vault.released = true;
         vault.active = false;
 
@@ -415,7 +872,6 @@ contract AmanahVault is ReentrancyGuard {
             claimable[vaultId][vaultBeneficiaries[i].wallet] += share;
         }
 
-        // Last beneficiary receives remainder to absorb rounding dust
         uint256 remainder = totalBalance - distributed;
         claimable[vaultId][vaultBeneficiaries[lastIndex].wallet] += remainder;
 
@@ -426,18 +882,13 @@ contract AmanahVault is ReentrancyGuard {
         uint256 amount = claimable[vaultId][msg.sender];
         if (amount == 0) revert NothingToClaim();
 
-        // Checks-effects-interactions: zero storage before transfer
         claimable[vaultId][msg.sender] = 0;
         usdc.safeTransfer(msg.sender, amount);
 
         emit Claimed(vaultId, msg.sender, amount);
     }
 
-    function _validateAndSetBeneficiaries(
-        uint256 vaultId,
-        address[] memory _wallets,
-        uint16[] memory _shareBps
-    ) internal {
+    function _validateAndSetBeneficiaries(uint256 vaultId, address[] memory _wallets, uint16[] memory _shareBps) internal {
         if (_wallets.length != _shareBps.length) revert ArrayLengthMismatch();
         if (_wallets.length == 0 || _wallets.length > 10) revert InvalidBeneficiaryCount();
 
@@ -446,6 +897,7 @@ contract AmanahVault is ReentrancyGuard {
         for (uint256 i = 0; i < _wallets.length; i++) {
             address wallet = _wallets[i];
             if (wallet == address(0)) revert ZeroAddress();
+
             totalShareBps += _shareBps[i];
             beneficiaries[vaultId].push(Beneficiary({wallet: wallet, shareBps: _shareBps[i]}));
         }
@@ -457,3 +909,4 @@ contract AmanahVault is ReentrancyGuard {
         if (vaultId == 0 || vaultId > vaultCount) revert VaultNotFound();
     }
 }
+

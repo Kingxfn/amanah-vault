@@ -17,6 +17,8 @@ contract AmanahVault is ReentrancyGuard {
         address owner;
         uint256 lastCheckIn;
         uint256 checkInInterval;
+        uint256 pendingWindow;
+        uint256 pendingSince;
         bool released;
         bool active;
     }
@@ -24,10 +26,15 @@ contract AmanahVault is ReentrancyGuard {
     error ZeroAddress();
     error ZeroAmount();
     error ZeroInterval();
+    error PendingWindowTooShort();
+    error PendingWindowTooLong();
     error NotOwner();
     error NotActive();
     error AlreadyReleased();
-    error TooSoon();
+    error NotOverdue();
+    error AlreadyPending();
+    error NotPending();
+    error PendingWindowNotElapsed();
     error InvalidShares();
     error InvalidBeneficiaryCount();
     error ArrayLengthMismatch();
@@ -36,17 +43,27 @@ contract AmanahVault is ReentrancyGuard {
 
     IERC20 public immutable usdc;
     uint256 public vaultCount;
+    uint256 public constant MIN_PENDING_WINDOW = 60;
+    uint256 public constant MAX_PENDING_WINDOW = 30 * 86400;
 
     mapping(uint256 => Vault) public vaults;
     mapping(uint256 => Beneficiary[]) public beneficiaries;
     mapping(uint256 => mapping(address => uint256)) public claimable;
     mapping(uint256 => uint256) public vaultBalance;
 
-    event VaultCreated(uint256 indexed vaultId, address indexed owner, uint256 checkInInterval, uint256 beneficiaryCount);
+    event VaultCreated(
+        uint256 indexed vaultId,
+        address indexed owner,
+        uint256 checkInInterval,
+        uint256 pendingWindow,
+        uint256 beneficiaryCount
+    );
     event Deposited(uint256 indexed vaultId, address indexed sender, uint256 amount);
     event CheckedIn(uint256 indexed vaultId, address indexed owner, uint256 timestamp);
     event Withdrawn(uint256 indexed vaultId, address indexed owner, uint256 amount);
     event BeneficiariesUpdated(uint256 indexed vaultId, address indexed owner, uint256 beneficiaryCount);
+    event PendingReleaseStarted(uint256 indexed vaultId, address indexed caller, uint256 pendingSince, uint256 pendingWindow);
+    event ReleaseCancelled(uint256 indexed vaultId, address indexed owner);
     event Released(uint256 indexed vaultId, address indexed caller, uint256 totalDistributed, uint256 beneficiaryCount);
     event Claimed(uint256 indexed vaultId, address indexed beneficiary, uint256 amount);
 
@@ -58,9 +75,12 @@ contract AmanahVault is ReentrancyGuard {
     function createVault(
         address[] memory _beneficiaryWallets,
         uint16[] memory _shareBps,
-        uint256 _checkInInterval
+        uint256 _checkInInterval,
+        uint256 _pendingWindow
     ) external returns (uint256 vaultId) {
         if (_checkInInterval == 0) revert ZeroInterval();
+        if (_pendingWindow < MIN_PENDING_WINDOW) revert PendingWindowTooShort();
+        if (_pendingWindow > MAX_PENDING_WINDOW) revert PendingWindowTooLong();
 
         vaultId = ++vaultCount;
 
@@ -68,13 +88,15 @@ contract AmanahVault is ReentrancyGuard {
             owner: msg.sender,
             lastCheckIn: block.timestamp,
             checkInInterval: _checkInInterval,
+            pendingWindow: _pendingWindow,
+            pendingSince: 0,
             released: false,
             active: true
         });
 
         _validateAndSetBeneficiaries(vaultId, _beneficiaryWallets, _shareBps);
 
-        emit VaultCreated(vaultId, msg.sender, _checkInInterval, _beneficiaryWallets.length);
+        emit VaultCreated(vaultId, msg.sender, _checkInInterval, _pendingWindow, _beneficiaryWallets.length);
     }
 
     function deposit(uint256 vaultId, uint256 amount) external nonReentrant {
@@ -99,6 +121,14 @@ contract AmanahVault is ReentrancyGuard {
         if (msg.sender != vault.owner) revert NotOwner();
         if (!vault.active) revert NotActive();
 
+        // Cancel a pending release only while the pending window is still open.
+        // Once the window has elapsed the owner can no longer race a finalizeRelease.
+        if (vault.pendingSince != 0) {
+            if (block.timestamp >= vault.pendingSince + vault.pendingWindow) revert PendingWindowNotElapsed();
+            vault.pendingSince = 0;
+            emit ReleaseCancelled(vaultId, msg.sender);
+        }
+
         vault.lastCheckIn = block.timestamp;
 
         emit CheckedIn(vaultId, msg.sender, block.timestamp);
@@ -111,6 +141,9 @@ contract AmanahVault is ReentrancyGuard {
         if (msg.sender != vault.owner) revert NotOwner();
         if (!vault.active) revert NotActive();
         if (vault.released) revert AlreadyReleased();
+        // Lock owner mutations once the pending window has expired.
+        if (vault.pendingSince != 0 && block.timestamp >= vault.pendingSince + vault.pendingWindow)
+            revert PendingWindowNotElapsed();
         if (amount == 0) revert ZeroAmount();
 
         vaultBalance[vaultId] -= amount;
@@ -126,6 +159,9 @@ contract AmanahVault is ReentrancyGuard {
         if (msg.sender != vault.owner) revert NotOwner();
         if (!vault.active) revert NotActive();
         if (vault.released) revert AlreadyReleased();
+        // Lock owner mutations once the pending window has expired.
+        if (vault.pendingSince != 0 && block.timestamp >= vault.pendingSince + vault.pendingWindow)
+            revert PendingWindowNotElapsed();
 
         delete beneficiaries[vaultId];
         _validateAndSetBeneficiaries(vaultId, _wallets, _shareBps);
@@ -133,13 +169,28 @@ contract AmanahVault is ReentrancyGuard {
         emit BeneficiariesUpdated(vaultId, msg.sender, _wallets.length);
     }
 
-    function release(uint256 vaultId) external nonReentrant {
+    function startRelease(uint256 vaultId) external {
         _requireVaultExists(vaultId);
 
         Vault storage vault = vaults[vaultId];
         if (vault.released) revert AlreadyReleased();
         if (!vault.active) revert NotActive();
-        if (block.timestamp < vault.lastCheckIn + vault.checkInInterval) revert TooSoon();
+        if (block.timestamp < vault.lastCheckIn + vault.checkInInterval) revert NotOverdue();
+        if (vault.pendingSince != 0) revert AlreadyPending();
+
+        vault.pendingSince = block.timestamp;
+
+        emit PendingReleaseStarted(vaultId, msg.sender, vault.pendingSince, vault.pendingWindow);
+    }
+
+    function finalizeRelease(uint256 vaultId) external nonReentrant {
+        _requireVaultExists(vaultId);
+
+        Vault storage vault = vaults[vaultId];
+        if (vault.released) revert AlreadyReleased();
+        if (!vault.active) revert NotActive();
+        if (vault.pendingSince == 0) revert NotPending();
+        if (block.timestamp < vault.pendingSince + vault.pendingWindow) revert PendingWindowNotElapsed();
 
         vault.released = true;
         vault.active = false;

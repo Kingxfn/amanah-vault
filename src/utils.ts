@@ -72,7 +72,12 @@ export function parseOnchainError(err: unknown): string {
   const msg = (err as { message?: string })?.message?.toLowerCase() ?? ''
   if (msg.includes('user rejected') || msg.includes('user denied')) return 'Transaction cancelled.'
   if (msg.includes('insufficient funds') || msg.includes('exceeds balance')) return 'Insufficient USDC balance.'
-  if (msg.includes('toosoon')) return 'Check-in interval has not elapsed yet.'
+  if (msg.includes('notoverdue')) return 'The check-in period has not elapsed yet.'
+  if (msg.includes('alreadypending')) return 'A release is already pending for this vault.'
+  if (msg.includes('notpending')) return 'No pending release — call Start Release first.'
+  if (msg.includes('pendingwindownotelapsed')) return 'The pending-release window has not elapsed yet.'
+  if (msg.includes('pendingwindowtooShort') || msg.includes('pendingwindootooshort')) return 'Release delay must be at least 1 minute.'
+  if (msg.includes('pendingwindowtoolong')) return 'Release delay exceeds the 30-day maximum.'
   if (msg.includes('alreadyreleased')) return 'Vault has already been released.'
   if (msg.includes('notowner')) return 'Only the vault owner can do this.'
   if (msg.includes('notactive')) return 'Vault is no longer active.'
@@ -85,13 +90,21 @@ export function parseOnchainError(err: unknown): string {
 }
 
 export const INTERVAL_OPTIONS = [
-  { label: '2 min (test)', seconds: 120 },
-  { label: '7 days',       seconds: 7   * 86400 },
-  { label: '14 days',      seconds: 14  * 86400 },
-  { label: '30 days',      seconds: 30  * 86400 },
-  { label: '90 days',      seconds: 90  * 86400 },
-  { label: '180 days',     seconds: 180 * 86400 },
-  { label: '365 days',     seconds: 365 * 86400 },
+  { label: '2 min (test)', seconds: 120,        testOnly: true },
+  { label: '7 days',       seconds: 7   * 86400, testOnly: false },
+  { label: '14 days',      seconds: 14  * 86400, testOnly: false },
+  { label: '30 days',      seconds: 30  * 86400, testOnly: false },
+  { label: '90 days',      seconds: 90  * 86400, testOnly: false },
+  { label: '180 days',     seconds: 180 * 86400, testOnly: false },
+  { label: '365 days',     seconds: 365 * 86400, testOnly: false },
+] as const
+
+/** Release-delay (pendingWindow) presets: min 60s, max 30 days. */
+export const PENDING_WINDOW_OPTIONS = [
+  { label: '1 min (test)', seconds: 60,          testOnly: true },
+  { label: '3 days',       seconds: 3   * 86400, testOnly: false },
+  { label: '7 days',       seconds: 7   * 86400, testOnly: false },
+  { label: '14 days',      seconds: 14  * 86400, testOnly: false },
 ] as const
 
 /** Generate an .ics calendar event string for a vault deadline. */

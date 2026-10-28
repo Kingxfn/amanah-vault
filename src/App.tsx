@@ -183,7 +183,7 @@ function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }) {
           </h1>
           <p style={{ color: '#6a849f', fontSize: 14, lineHeight: 1.75, margin: '0 0 22px', maxWidth: 340 }}>
             Deposit USDC, set your beneficiaries and choose a period.
-            Check in once within your chosen period and your timer restarts. Only if the entire period passes with no check-in can anyone release the vault.
+            Check in once within your chosen period and your timer restarts. Only if the entire period passes with no check-in can anyone start a release — and the owner still has a delay window to cancel before funds are distributed.
           </p>
 
           {/* CTA buttons */}
@@ -317,7 +317,7 @@ function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }) {
             {
               icon: <Clock size={18} color="#3b82f6" />,
               title: 'Release & Claim',
-              desc: 'Once overdue, anyone can trigger the release — but funds can only be claimed by the listed beneficiaries. The person who triggers release receives nothing. The owner can withdraw the full balance at any time while active.',
+              desc: 'Once overdue, anyone can start a release. The owner has a delay window to cancel by checking in. After the window closes, anyone can finalize — only listed beneficiaries can claim funds. The caller receives nothing.',
               accent: 'blue' as const,
             },
           ].map((step, i) => (
@@ -522,10 +522,16 @@ function HowItWorksPage() {
       icon: <CheckCircle2 size={20} color="#8b5cf6" />,
     },
     {
-      title: 'Release & Claim',
-      desc: 'Once overdue, anyone can call release() — but the person who triggers it receives nothing. release() records each beneficiary\'s share. Only listed beneficiaries can call claim() to receive their portion.',
+      title: 'Start release (step 1 of 2)',
+      desc: 'Once overdue, anyone can call startRelease(). The owner then has a release delay window — set at vault creation — to cancel by checking in. The caller receives nothing.',
       accent: 'blue' as const,
       icon: <Zap size={20} color="#3b82f6" />,
+    },
+    {
+      title: 'Finalize release (step 2 of 2)',
+      desc: 'After the release delay expires with no cancellation, anyone can call finalizeRelease() to permanently allocate funds to beneficiaries. This is irreversible. The caller receives nothing.',
+      accent: 'blue' as const,
+      icon: <Zap size={20} color="#f87171" />,
     },
     {
       title: 'Claim your share',

@@ -107,15 +107,22 @@ export function VaultCard({ vaultId }: Props) {
     )
   }
 
-  const [owner, lastCheckIn, checkInInterval, released, active] = vault
+  const [owner, lastCheckIn, checkInInterval, pendingWindow, pendingSince, released, active] = vault
   const isOwner = address?.toLowerCase() === owner.toLowerCase()
   const deadline = Number(lastCheckIn) + Number(checkInInterval)
   const secondsLeft = deadline - now
   const isOverdue = secondsLeft <= 0
 
+  // Pending release state
+  const isPendingRelease = Number(pendingSince) !== 0 && !released
+  const pendingWindowSecs = Number(pendingWindow)
+  const pendingExpiry = Number(pendingSince) + pendingWindowSecs
+  const pendingSecsLeft = pendingExpiry - now
+  const isPendingWindowExpired = isPendingRelease && pendingSecsLeft <= 0
+
   // Warning threshold: 14 days OR last 25% of interval, whichever is larger
   const warningThresholdSecs = Math.max(14 * 86400, Number(checkInInterval) * 0.25)
-  const isWarning = !isOverdue && !released && secondsLeft <= warningThresholdSecs
+  const isWarning = !isOverdue && !released && !isPendingRelease && secondsLeft <= warningThresholdSecs
 
   const parsedAmount = parseUsdcInput(amountInput)
   const needsApprove = activeTab === 'deposit' && parsedAmount > 0n && (allowance ?? 0n) < parsedAmount
@@ -169,6 +176,10 @@ export function VaultCard({ vaultId }: Props) {
 
   const statusColor = released
     ? 'text-[var(--muted)]'
+    : isPendingWindowExpired
+    ? 'text-[var(--danger)]'
+    : isPendingRelease
+    ? 'text-orange-400'
     : isOverdue
     ? 'text-[var(--danger)]'
     : isWarning
@@ -177,17 +188,25 @@ export function VaultCard({ vaultId }: Props) {
 
   const statusLabel = released
     ? 'Released'
+    : isPendingWindowExpired
+    ? 'Release ready to finalize'
+    : isPendingRelease
+    ? 'Release pending'
     : active
     ? (isOverdue ? 'Overdue' : isWarning ? 'Check in soon' : 'Active')
     : 'Inactive'
 
-  const cardStyle: React.CSSProperties = isOverdue && !released
+  const cardStyle: React.CSSProperties = isPendingWindowExpired && !released
+    ? { boxShadow: '0 0 0 1px rgba(248,113,113,0.45), 0 8px 32px rgba(248,113,113,0.15)' }
+    : isPendingRelease && !released
+    ? { boxShadow: '0 0 0 1px rgba(251,146,60,0.40), 0 8px 32px rgba(251,146,60,0.12)' }
+    : isOverdue && !released
     ? { boxShadow: '0 0 0 1px rgba(248,113,113,0.35), 0 8px 32px rgba(248,113,113,0.12)' }
     : isWarning
     ? { boxShadow: '0 0 0 1px rgba(250,204,21,0.30), 0 8px 32px rgba(250,204,21,0.08)' }
     : {}
 
-  const cardAccentClass = released ? 'card-teal' : isOverdue ? '' : isWarning ? '' : 'card-blue'
+  const cardAccentClass = released ? 'card-teal' : isOverdue ? '' : isPendingRelease ? '' : isWarning ? '' : 'card-blue'
 
   return (
     <div className={`card space-y-4 ${cardAccentClass}`} style={cardStyle}>
@@ -224,8 +243,8 @@ export function VaultCard({ vaultId }: Props) {
         <div className="text-sm text-[var(--muted)] mt-0.5">USDC in vault</div>
       </div>
 
-      {/* Countdown */}
-      {!released && (
+      {/* Countdown — check-in timer (hidden while pending release is active) */}
+      {!released && !isPendingRelease && (
         <div style={{
           borderRadius: 8, padding: '8px 12px', textAlign: 'center',
           fontSize: 13, fontWeight: 500, fontVariantNumeric: 'tabular-nums',
@@ -244,8 +263,34 @@ export function VaultCard({ vaultId }: Props) {
         </div>
       )}
 
-      {/* Warning banner */}
-      {isWarning && !isOverdue && (
+      {/* Pending release banner */}
+      {isPendingRelease && !released && (
+        <div style={{
+          borderRadius: 8, padding: '10px 14px', fontSize: 13,
+          border: isPendingWindowExpired
+            ? '1px solid rgba(248,113,113,0.45)'
+            : '1px solid rgba(251,146,60,0.40)',
+          background: isPendingWindowExpired
+            ? 'rgba(248,113,113,0.08)'
+            : 'rgba(251,146,60,0.07)',
+          color: isPendingWindowExpired ? '#f87171' : '#fb923c',
+          display: 'flex', flexDirection: 'column', gap: 4,
+        }}>
+          <div style={{ fontWeight: 600 }}>
+            {isPendingWindowExpired
+              ? 'Release window expired — ready to finalize'
+              : `Release pending — ${formatCountdown(pendingSecsLeft)} to cancel`}
+          </div>
+          <div style={{ fontSize: 12, opacity: 0.85 }}>
+            {isPendingWindowExpired
+              ? 'Anyone can now call Finalize Release to distribute funds to beneficiaries.'
+              : 'Check in now to cancel the release and restart your timer.'}
+          </div>
+        </div>
+      )}
+
+      {/* Warning banner (only when no pending release active) */}
+      {isWarning && !isOverdue && !isPendingRelease && (
         <div style={{
           borderRadius: 8, padding: '8px 12px', fontSize: 12,
           border: '1px solid rgba(250,204,21,0.28)',
@@ -293,8 +338,16 @@ export function VaultCard({ vaultId }: Props) {
               onClick={handleCheckIn}
               disabled={isPending || isConfirming}
               className="btn-primary flex-1 text-sm py-2"
+              style={isPendingRelease && !isPendingWindowExpired ? {
+                background: 'linear-gradient(135deg,#fb923c,#f59e0b)',
+                boxShadow: '0 2px 12px rgba(251,146,60,0.30)',
+              } : undefined}
             >
-              {isPending && activeTab === null ? 'Confirm…' : 'Check in'}
+              {isPending && activeTab === null
+                ? 'Confirm…'
+                : isPendingRelease && !isPendingWindowExpired
+                ? 'Check in — cancel release'
+                : 'Check in'}
             </button>
             {(['deposit', 'withdraw', 'update'] as const).map(tab => (
               <button
