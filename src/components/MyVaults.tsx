@@ -64,8 +64,14 @@ export function MyVaults() {
         </div>
       )}
 
-      {total > 0 && (
-        <VaultList key={refreshKey} ownerAddress={address!} total={total} />
+      {total > 0 && address && (
+        <VaultList key={refreshKey} ownerAddress={address} total={total} />
+      )}
+
+      {total > 0 && !address && (
+        <div className="card card-blue text-center py-10 space-y-2">
+          <p className="text-sm text-[var(--muted)]">Connect your wallet to see which of the {total} vaults are yours.</p>
+        </div>
       )}
     </div>
     </ChainGuard>
