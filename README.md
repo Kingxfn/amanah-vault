@@ -14,7 +14,8 @@ Each vault owner sets a check-in period (e.g. 90 days) and a list of beneficiari
 - Non-custodial — only the vault owner can withdraw before release
 - No admin keys, no upgradeability, no proxy
 - No yield, interest or lending — pure USDC custody
-- Pull-claim model after release — anyone can trigger `release()`, but only listed beneficiaries can call `claim()`. The person who triggers release receives nothing.
+- Two-step release: `startRelease()` begins a pending window; `finalizeRelease()` distributes once the window closes. The owner can cancel during the window by calling `checkIn()`.
+- Pull-claim model after finalization — only listed beneficiaries can call `claim()`. No caller receives funds for triggering start or finalize.
 - Per-vault balance tracking via `vaultBalance[vaultId]` mapping
 - Deposit uses before/after `balanceOf` delta to handle any token quirks
 

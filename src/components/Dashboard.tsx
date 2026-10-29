@@ -139,7 +139,7 @@ export function Dashboard() {
             {[
               { n: '1', title: 'Create a vault', desc: 'Set beneficiaries, share splits, and a check-in interval.' },
               { n: '2', title: 'Check in before your deadline', desc: 'Any check-in resets the full timer. You only need to check in once per period — any day, any time.' },
-              { n: '3', title: 'Release & Claim', desc: 'Once overdue, anyone can trigger the release — but the caller receives nothing. Only the listed beneficiaries can claim funds, each independently.' },
+              { n: '3', title: 'Release & Claim', desc: 'Once overdue, anyone can start a release. The owner then has a window to cancel by checking in. After the window closes, anyone can finalize — but only listed beneficiaries can claim funds.' },
             ].map(step => (
               <div key={step.n} className="flex gap-3">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5"
@@ -221,7 +221,7 @@ function VaultDeadlineScan({ vaultId, ownerAddress, now, onReleased }: {
     chainId: CHAIN_ID,
   })
   if (!vault) return null
-  const [owner, lastCheckIn, checkInInterval, released] = vault
+  const [owner, lastCheckIn, checkInInterval, , , released] = vault
   if (owner.toLowerCase() !== ownerAddress.toLowerCase()) return null
   if (released) { onReleased(true); return null }
   const deadline = Number(lastCheckIn) + Number(checkInInterval)
@@ -252,7 +252,7 @@ function OverdueCheck({ vaultId, ownerAddress, now }: { vaultId: bigint; ownerAd
     chainId: CHAIN_ID,
   })
   if (!vault) return null
-  const [owner, lastCheckIn, checkInInterval, released, active] = vault
+  const [owner, lastCheckIn, checkInInterval, , , released, active] = vault
   if (owner.toLowerCase() !== ownerAddress.toLowerCase()) return null
   if (released || !active) return null
   const deadline = Number(lastCheckIn) + Number(checkInInterval)

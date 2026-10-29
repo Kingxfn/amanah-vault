@@ -1,13 +1,20 @@
 {
-  "contractAddress": "0xa774c2c2af6ca4f0cc5a08fe8b47b98d1e1f92a7",
+  "contractAddress": "0x6103ac5a11f639a66b3d25bc9da918c4c714e54d",
   "network": "ARC-TESTNET",
   "deployerWalletId": "3c2464b2-8369-52e2-a782-800bbeca5396",
   "contract_code_path": "/home/user/app/contracts/AmanahVault.sol",
   "contract_compiled_code_path": "/home/user/app/contracts/out/AmanahVault.sol/AmanahVault.json",
   "contract_network_and_links": {
-    "Arc Testnet": "https://explorer.testnet.arc.io/address/0xa774c2c2af6ca4f0cc5a08fe8b47b98d1e1f92a7"
+    "Arc Testnet": "https://explorer.testnet.arc.io/address/0x6103ac5a11f639a66b3d25bc9da918c4c714e54d"
   },
   "contract_deployments": [
+    {
+      "chain": "Arc Testnet",
+      "address": "0x6103ac5a11f639a66b3d25bc9da918c4c714e54d",
+      "explorerUrl": "https://explorer.testnet.arc.io/address/0x6103ac5a11f639a66b3d25bc9da918c4c714e54d",
+      "txHash": "0x0d240af172ae7a7b869ea618ec7f4c4bf2bc89c596b2adb50437ef7c479ea4b0",
+      "deployedAt": "2026-10-29T10:30:14.326Z"
+    },
     {
       "chain": "Arc Testnet",
       "address": "0xa774c2c2af6ca4f0cc5a08fe8b47b98d1e1f92a7",
@@ -24,34 +31,32 @@
           "name": "_usdc",
           "type": "address",
           "internalType": "address"
-        },
-        {
-          "name": "_beneficiaryWallets",
-          "type": "address[]",
-          "internalType": "address[]"
-        },
-        {
-          "name": "_shareBps",
-          "type": "uint16[]",
-          "internalType": "uint16[]"
-        },
-        {
-          "name": "_checkInInterval",
-          "type": "uint256",
-          "internalType": "uint256"
         }
       ],
       "stateMutability": "nonpayable"
     },
     {
       "type": "function",
-      "name": "active",
+      "name": "MAX_PENDING_WINDOW",
       "inputs": [],
       "outputs": [
         {
           "name": "",
-          "type": "bool",
-          "internalType": "bool"
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "MIN_PENDING_WINDOW",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
         }
       ],
       "stateMutability": "view"
@@ -60,6 +65,11 @@
       "type": "function",
       "name": "beneficiaries",
       "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
         {
           "name": "",
           "type": "uint256",
@@ -83,27 +93,26 @@
     {
       "type": "function",
       "name": "checkIn",
-      "inputs": [],
+      "inputs": [
+        {
+          "name": "vaultId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
       "outputs": [],
       "stateMutability": "nonpayable"
     },
     {
       "type": "function",
-      "name": "checkInInterval",
-      "inputs": [],
-      "outputs": [
+      "name": "claim",
+      "inputs": [
         {
-          "name": "",
+          "name": "vaultId",
           "type": "uint256",
           "internalType": "uint256"
         }
       ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "claim",
-      "inputs": [],
       "outputs": [],
       "stateMutability": "nonpayable"
     },
@@ -111,6 +120,11 @@
       "type": "function",
       "name": "claimable",
       "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
         {
           "name": "",
           "type": "address",
@@ -128,8 +142,47 @@
     },
     {
       "type": "function",
+      "name": "createVault",
+      "inputs": [
+        {
+          "name": "_beneficiaryWallets",
+          "type": "address[]",
+          "internalType": "address[]"
+        },
+        {
+          "name": "_shareBps",
+          "type": "uint16[]",
+          "internalType": "uint16[]"
+        },
+        {
+          "name": "_checkInInterval",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_pendingWindow",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "vaultId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
       "name": "deposit",
       "inputs": [
+        {
+          "name": "vaultId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
         {
           "name": "amount",
           "type": "uint256",
@@ -141,65 +194,25 @@
     },
     {
       "type": "function",
-      "name": "lastCheckIn",
-      "inputs": [],
-      "outputs": [
+      "name": "finalizeRelease",
+      "inputs": [
         {
-          "name": "",
+          "name": "vaultId",
           "type": "uint256",
           "internalType": "uint256"
         }
       ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "owner",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "release",
-      "inputs": [],
       "outputs": [],
       "stateMutability": "nonpayable"
     },
     {
       "type": "function",
-      "name": "released",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool",
-          "internalType": "bool"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "renounceOwnership",
-      "inputs": [],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "transferOwnership",
+      "name": "startRelease",
       "inputs": [
         {
-          "name": "newOwner",
-          "type": "address",
-          "internalType": "address"
+          "name": "vaultId",
+          "type": "uint256",
+          "internalType": "uint256"
         }
       ],
       "outputs": [],
@@ -209,6 +222,11 @@
       "type": "function",
       "name": "updateBeneficiaries",
       "inputs": [
+        {
+          "name": "vaultId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
         {
           "name": "_wallets",
           "type": "address[]",
@@ -238,8 +256,94 @@
     },
     {
       "type": "function",
+      "name": "vaultBalance",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "vaultCount",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "vaults",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "owner",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "lastCheckIn",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "checkInInterval",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "pendingWindow",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "pendingSince",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "released",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
       "name": "withdraw",
       "inputs": [
+        {
+          "name": "vaultId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
         {
           "name": "amount",
           "type": "uint256",
@@ -253,6 +357,12 @@
       "type": "event",
       "name": "BeneficiariesUpdated",
       "inputs": [
+        {
+          "name": "vaultId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
         {
           "name": "owner",
           "type": "address",
@@ -273,6 +383,12 @@
       "name": "CheckedIn",
       "inputs": [
         {
+          "name": "vaultId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
           "name": "owner",
           "type": "address",
           "indexed": true,
@@ -291,6 +407,12 @@
       "type": "event",
       "name": "Claimed",
       "inputs": [
+        {
+          "name": "vaultId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
         {
           "name": "beneficiary",
           "type": "address",
@@ -311,6 +433,12 @@
       "name": "Deposited",
       "inputs": [
         {
+          "name": "vaultId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
           "name": "sender",
           "type": "address",
           "indexed": true,
@@ -327,16 +455,47 @@
     },
     {
       "type": "event",
-      "name": "OwnershipTransferred",
+      "name": "PendingReleaseStarted",
       "inputs": [
         {
-          "name": "previousOwner",
+          "name": "vaultId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "caller",
           "type": "address",
           "indexed": true,
           "internalType": "address"
         },
         {
-          "name": "newOwner",
+          "name": "pendingSince",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "pendingWindow",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ReleaseCancelled",
+      "inputs": [
+        {
+          "name": "vaultId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "owner",
           "type": "address",
           "indexed": true,
           "internalType": "address"
@@ -348,6 +507,12 @@
       "type": "event",
       "name": "Released",
       "inputs": [
+        {
+          "name": "vaultId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
         {
           "name": "caller",
           "type": "address",
@@ -374,6 +539,12 @@
       "name": "VaultCreated",
       "inputs": [
         {
+          "name": "vaultId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
           "name": "owner",
           "type": "address",
           "indexed": true,
@@ -381,6 +552,12 @@
         },
         {
           "name": "checkInInterval",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "pendingWindow",
           "type": "uint256",
           "indexed": false,
           "internalType": "uint256"
@@ -399,6 +576,12 @@
       "name": "Withdrawn",
       "inputs": [
         {
+          "name": "vaultId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
           "name": "owner",
           "type": "address",
           "indexed": true,
@@ -412,6 +595,11 @@
         }
       ],
       "anonymous": false
+    },
+    {
+      "type": "error",
+      "name": "AlreadyPending",
+      "inputs": []
     },
     {
       "type": "error",
@@ -440,30 +628,38 @@
     },
     {
       "type": "error",
+      "name": "NotOverdue",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NotOwner",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NotPending",
+      "inputs": []
+    },
+    {
+      "type": "error",
       "name": "NothingToClaim",
       "inputs": []
     },
     {
       "type": "error",
-      "name": "OwnableInvalidOwner",
-      "inputs": [
-        {
-          "name": "owner",
-          "type": "address",
-          "internalType": "address"
-        }
-      ]
+      "name": "PendingWindowNotElapsed",
+      "inputs": []
     },
     {
       "type": "error",
-      "name": "OwnableUnauthorizedAccount",
-      "inputs": [
-        {
-          "name": "account",
-          "type": "address",
-          "internalType": "address"
-        }
-      ]
+      "name": "PendingWindowTooLong",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "PendingWindowTooShort",
+      "inputs": []
     },
     {
       "type": "error",
@@ -483,7 +679,7 @@
     },
     {
       "type": "error",
-      "name": "TooSoon",
+      "name": "VaultNotFound",
       "inputs": []
     },
     {
@@ -494,6 +690,11 @@
     {
       "type": "error",
       "name": "ZeroAmount",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "ZeroInterval",
       "inputs": []
     }
   ]

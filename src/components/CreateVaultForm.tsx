@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { Plus, Trash2, ExternalLink, Calendar } from 'lucide-react'
 import { AMANA_VAULT_ADDRESS, AMANA_VAULT_ABI } from '@/contract'
-import { INTERVAL_OPTIONS, parseOnchainError, txExplorerUrl } from '@/utils'
+import { INTERVAL_OPTIONS, PENDING_WINDOW_OPTIONS, parseOnchainError, txExplorerUrl } from '@/utils'
 import { TxResult } from './TxResult'
 import { ChainGuard } from './ChainGuard'
 
@@ -11,28 +11,55 @@ interface BeneficiaryRow {
   pct: string
 }
 
-// -1 means "custom"
 const PRESET_IDX_CUSTOM = -1
+const IS_MAINNET = import.meta.env.VITE_ARC_MAINNET === 'true'
 
 export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
   const { isConnected } = useAccount()
-  const [rows, setRows]         = useState<BeneficiaryRow[]>([{ wallet: '', pct: '100' }])
-  const [intervalIdx, setIntervalIdx] = useState(1) // default 7 days
-  const [customDays, setCustomDays]   = useState('')
+
+  // Beneficiaries
+  const [rows, setRows] = useState<BeneficiaryRow[]>([{ wallet: '', pct: '100' }])
+
+  // Check-in interval
+  const [intervalIdx, setIntervalIdx] = useState(IS_MAINNET ? 1 : 1) // default 7 days (idx 1 on mainnet, idx 1 on testnet after filtering)
+  const [customDays, setCustomDays] = useState('')
+  const isCustomInterval = intervalIdx === PRESET_IDX_CUSTOM
+
+  // Release delay (pendingWindow)
+  const visiblePendingOptions = IS_MAINNET
+    ? PENDING_WINDOW_OPTIONS.filter(o => !o.testOnly)
+    : PENDING_WINDOW_OPTIONS
+  const [pendingIdx, setPendingIdx] = useState(IS_MAINNET ? 0 : 0) // default 1 min test / 3 days mainnet
+  const [customPendingDays, setCustomPendingDays] = useState('')
+  const isCustomPending = pendingIdx === PRESET_IDX_CUSTOM
+
+  // Filter check-in options by environment
+  const visibleIntervalOptions = IS_MAINNET
+    ? INTERVAL_OPTIONS.filter(o => !o.testOnly)
+    : INTERVAL_OPTIONS
+
   const [acknowledged, setAcknowledged] = useState(false)
-  const [error, setError]       = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const { writeContract, data: hash, isPending, reset } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
-  // Resolve seconds from selection
-  const isCustom = intervalIdx === PRESET_IDX_CUSTOM
-  const customSecs = isCustom
-    ? Math.max(1, Math.floor(parseFloat(customDays) || 0)) * 86400
-    : INTERVAL_OPTIONS[intervalIdx].seconds
-  const intervalSeconds = isCustom ? customSecs : INTERVAL_OPTIONS[intervalIdx].seconds
+  // Seconds from interval selection
+  const intervalSeconds = useMemo(() => {
+    if (isCustomInterval) return Math.max(1, Math.floor(parseFloat(customDays) || 0)) * 86400
+    return visibleIntervalOptions[intervalIdx]?.seconds ?? 0
+  }, [isCustomInterval, intervalIdx, customDays, visibleIntervalOptions])
 
-  // Deadline preview — useMemo so Date.now() is not called on every render pass
+  // Seconds from pending window selection
+  const pendingWindowSeconds = useMemo(() => {
+    if (isCustomPending) {
+      const d = Math.floor(parseFloat(customPendingDays) || 0)
+      return Math.max(1, d) * 86400
+    }
+    return visiblePendingOptions[pendingIdx]?.seconds ?? 60
+  }, [isCustomPending, pendingIdx, customPendingDays, visiblePendingOptions])
+
+  // Deadline preview
   const deadlineDate = useMemo(
     () => intervalSeconds > 0 ? new Date(Date.now() + intervalSeconds * 1000) : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -63,9 +90,13 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
       if (isNaN(p) || p <= 0) return 'All shares must be greater than 0%.'
     }
     if (!sharesOk) return `Shares total ${totalPct.toFixed(2)}% — must equal exactly 100%.`
-    if (isCustom) {
+    if (isCustomInterval) {
       const d = parseFloat(customDays)
-      if (isNaN(d) || d < 1) return 'Custom interval must be at least 1 day.'
+      if (isNaN(d) || d < 1) return 'Custom check-in interval must be at least 1 day.'
+    }
+    if (isCustomPending) {
+      const d = parseFloat(customPendingDays)
+      if (isNaN(d) || d < 1 || d > 30) return 'Custom release delay must be between 1 and 30 days.'
     }
     if (!acknowledged) return 'Please confirm the acknowledgement before creating a vault.'
     return null
@@ -90,6 +121,7 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
         rows.map(r => r.wallet as `0x${string}`),
         rawBps.map(b => b) as unknown as readonly number[],
         BigInt(intervalSeconds),
+        BigInt(pendingWindowSeconds),
       ],
     }, {
       onSuccess: () => { onCreated?.() },
@@ -158,11 +190,11 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
           )}
         </div>
 
-        {/* Interval */}
+        {/* Check-in interval */}
         <div className="space-y-2">
           <label className="label-sm">Check-in interval</label>
           <div className="grid grid-cols-2 xs:grid-cols-4 gap-2">
-            {INTERVAL_OPTIONS.map((opt, i) => (
+            {visibleIntervalOptions.map((opt, i) => (
               <button
                 key={i}
                 type="button"
@@ -182,11 +214,10 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
                 {opt.label}
               </button>
             ))}
-            {/* Custom */}
             <button
               type="button"
               onClick={() => setIntervalIdx(PRESET_IDX_CUSTOM)}
-              style={isCustom ? {
+              style={isCustomInterval ? {
                 background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)',
                 border: '1px solid rgba(139,92,246,0.5)',
                 color: '#fff',
@@ -202,8 +233,7 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
             </button>
           </div>
 
-          {/* Custom days input */}
-          {isCustom && (
+          {isCustomInterval && (
             <div className="flex items-center gap-2 mt-1">
               <div className="relative flex-1 max-w-[160px]">
                 <input
@@ -221,7 +251,6 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
             </div>
           )}
 
-          {/* Deadline preview */}
           {deadlineDate && intervalSeconds > 0 && (
             <div className="flex items-center gap-2 text-xs" style={{ color: '#6a849f' }}>
               <Calendar size={12} style={{ flexShrink: 0 }} />
@@ -233,8 +262,74 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
           )}
 
           <p className="text-xs text-[var(--muted)]">
-            If the entire period passes with no check-in, anyone can trigger the release — but only your listed beneficiaries can claim the funds. A single check-in at any point resets the full timer.
+            If the entire period passes with no check-in, anyone can start a release — but only your listed beneficiaries can claim the funds. A single check-in at any point during the window resets the full timer.
           </p>
+        </div>
+
+        {/* Release delay */}
+        <div className="space-y-2">
+          <label className="label-sm">Release delay</label>
+          <p className="text-xs text-[var(--muted)]">
+            After a release is started, this is how long the owner has to cancel it by checking in. Once this window passes, anyone can finalize the release and distribute funds to beneficiaries.
+          </p>
+          <div className="grid grid-cols-2 xs:grid-cols-4 gap-2">
+            {visiblePendingOptions.map((opt, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setPendingIdx(i)}
+                style={pendingIdx === i ? {
+                  background: 'linear-gradient(135deg,#8b5cf6,#6366f1)',
+                  border: '1px solid rgba(139,92,246,0.5)',
+                  color: '#fff',
+                  boxShadow: '0 2px 12px rgba(139,92,246,0.25)',
+                } : {
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.09)',
+                  color: '#b8cfeb',
+                }}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-center transition-colors hover:border-[var(--border-strong)]"
+              >
+                {opt.label}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setPendingIdx(PRESET_IDX_CUSTOM)}
+              style={isCustomPending ? {
+                background: 'linear-gradient(135deg,#8b5cf6,#6366f1)',
+                border: '1px solid rgba(139,92,246,0.5)',
+                color: '#fff',
+                boxShadow: '0 2px 12px rgba(139,92,246,0.25)',
+              } : {
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.09)',
+                color: '#b8cfeb',
+              }}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-center transition-colors hover:border-[var(--border-strong)]"
+            >
+              Custom…
+            </button>
+          </div>
+
+          {isCustomPending && (
+            <div className="flex items-center gap-2 mt-1">
+              <div className="relative flex-1 max-w-[160px]">
+                <input
+                  type="number"
+                  min="1"
+                  max="30"
+                  step="1"
+                  placeholder="1–30"
+                  value={customPendingDays}
+                  onChange={e => setCustomPendingDays(e.target.value)}
+                  className="input w-full pr-10 tabular-nums"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--muted)] pointer-events-none">days</span>
+              </div>
+              <span className="text-xs text-[var(--muted)]">1–30 days</span>
+            </div>
+          )}
         </div>
 
         {/* Acknowledgement */}
@@ -257,12 +352,10 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
           </span>
         </label>
 
-        {/* Error */}
         {error && !isPending && !isConfirming && (
           <p className="text-sm text-[var(--danger)]">{error}</p>
         )}
 
-        {/* Submit */}
         {!isConnected ? (
           <p className="text-sm text-[var(--muted)]">Connect your wallet to create a vault.</p>
         ) : (
