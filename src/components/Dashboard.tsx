@@ -156,9 +156,9 @@ export function Dashboard() {
         </div>
       </motion.div>
 
-      {/* Warning */}
-      {ids.length > 0 && (
-        <OverdueWarnings ids={ids} ownerAddress={address ?? ''} now={now} />
+      {/* Warning — only shown when wallet is connected */}
+      {address && ids.length > 0 && (
+        <OverdueWarnings ids={ids} ownerAddress={address} now={now} />
       )}
     </div>
   )
@@ -262,7 +262,7 @@ function OverdueCheck({ vaultId, ownerAddress, now }: { vaultId: bigint; ownerAd
     <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
       className="flex items-center gap-3 rounded-xl border border-[var(--danger)] bg-[rgba(248,113,113,0.08)] px-4 py-3 text-sm text-[var(--danger)]">
       <AlertTriangle size={15} className="shrink-0" />
-      Vault #{vaultId.toString()} is overdue — check in or it can be released by anyone.
+      Vault #{vaultId.toString()} is overdue — check in now to cancel any pending release, or go to My Vaults to review it.
     </motion.div>
   )
 }

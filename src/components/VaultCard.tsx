@@ -545,43 +545,38 @@ function AmountInput({ value, onChange }: { value: string; onChange: (v: string)
   )
 }
 
-function BeneficiariesViewer({ vaultId }: { vaultId: bigint }) {
-  // Read up to 10 beneficiaries by index; stop when we get an error
-  const reads = Array.from({ length: 10 }, (_, i) =>
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useReadContract({
-      address: AMANA_VAULT_ADDRESS,
-      abi: AMANA_VAULT_ABI,
-      functionName: 'beneficiaries',
-      args: [vaultId, BigInt(i)],
-      chainId: CHAIN_ID,
-    })
+// One row per beneficiary — each gets its own hook call (rules-of-hooks safe)
+function BeneficiaryRow({ vaultId, index }: { vaultId: bigint; index: number }) {
+  const { data } = useReadContract({
+    address: AMANA_VAULT_ADDRESS,
+    abi: AMANA_VAULT_ABI,
+    functionName: 'beneficiaries',
+    args: [vaultId, BigInt(index)],
+    chainId: CHAIN_ID,
+  })
+  if (!data || data[0] === '0x0000000000000000000000000000000000000000') return null
+  return (
+    <div className="flex items-center justify-between gap-2 text-xs">
+      <div className="flex items-center gap-1 font-mono text-[var(--ink-2)] min-w-0">
+        <span className="text-[var(--muted)] shrink-0">{index + 1}.</span>
+        <span className="truncate">{formatAddress(data[0])}</span>
+        <CopyButton text={data[0]} />
+      </div>
+      <span className="tabular-nums font-semibold text-[var(--success)] shrink-0">
+        {(Number(data[1]) / 100).toFixed(2)}%
+      </span>
+    </div>
   )
+}
 
-  const entries = reads
-    .map(r => r.data)
-    .filter((d): d is NonNullable<typeof d> => !!d && d[0] !== '0x0000000000000000000000000000000000000000')
-
+function BeneficiariesViewer({ vaultId }: { vaultId: bigint }) {
   return (
     <div style={{ marginTop: 8, borderRadius: 10, border: '1px solid rgba(139,92,246,0.18)', background: 'rgba(10,16,36,0.85)', padding: '10px 12px' }}>
-      {entries.length === 0 ? (
-        <p className="text-xs text-[var(--muted)] text-center py-1">Loading…</p>
-      ) : (
-        <div className="space-y-2">
-          {entries.map((b, i) => (
-            <div key={i} className="flex items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-1 font-mono text-[var(--ink-2)] min-w-0">
-                <span className="text-[var(--muted)] shrink-0">{i + 1}.</span>
-                <span className="truncate">{formatAddress(b[0])}</span>
-                <CopyButton text={b[0]} />
-              </div>
-              <span className="tabular-nums font-semibold text-[var(--success)] shrink-0">
-                {(Number(b[1]) / 100).toFixed(2)}%
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="space-y-2">
+        {Array.from({ length: 10 }, (_, i) => (
+          <BeneficiaryRow key={i} vaultId={vaultId} index={i} />
+        ))}
+      </div>
     </div>
   )
 }
