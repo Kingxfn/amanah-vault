@@ -3,11 +3,14 @@ import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAcc
 import { AMANA_VAULT_ADDRESS, AMANA_VAULT_ABI } from '@/contract'
 import {
   formatUsdc, formatAddress, formatCountdown,
-  parseOnchainError, txExplorerUrl, CHAIN_ID,
+  parseOnchainError, txExplorerUrl, CHAIN_ID, EXPLORER_BASE,
 } from '@/utils'
+
 import { TxResult } from './TxResult'
 import { ExternalLink, Search, Shield, AlertTriangle } from 'lucide-react'
 import { ChainGuard } from './ChainGuard'
+
+const EXPLORER_HOST = EXPLORER_BASE.replace('https://', '')
 
 export function ReleasePage() {
   const { address } = useAccount()
@@ -353,7 +356,7 @@ export function ReleasePage() {
                 className="flex items-center gap-1 text-xs text-[var(--accent-hover)] hover:underline"
               >
                 <ExternalLink size={11} />
-                View on explorer.testnet.arc.io
+                View on {EXPLORER_HOST}
               </a>
             )}
           </div>

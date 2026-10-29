@@ -40,6 +40,21 @@ Constants: `MIN_PENDING_WINDOW = 60s`, `MAX_PENDING_WINDOW = 2592000s (30 days)`
 - `src/components/` - UI components
 - `src/config.ts` - wagmi config (chains, connectors, transports)
 
+## Recent Changes (main branch)
+
+| Commit | Description |
+|---|---|
+| `08f3517` | Beneficiary viewer, copy buttons, release delay meta, vault ID on success, countdown fix |
+| `6cf4a71` | Fix hooks-in-loop in BeneficiaryViewer; overdue warning copy; README v2 address/tests/roadmap |
+| `latest` | Dynamic explorer hostname (no hardcoded testnet text), amountInput reset on success, "onchain" copy fix |
+
+## UI Notes
+
+- Explorer links in `TxResult`, `VaultCard`, `CreateVaultForm`, `ReleasePage` all use `EXPLORER_HOST` derived from `EXPLORER_BASE` (utils.ts) — switches automatically with `VITE_ARC_MAINNET=true`
+- `VaultCard` resets the deposit/withdraw amount input after a successful transaction
+- `BeneficiaryRow` is a separate component (not hooks-in-a-loop) for the beneficiary viewer
+- Dashboard overdue warnings only render when a wallet is connected
+
 ## To Run
 
 ```bash

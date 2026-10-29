@@ -1,5 +1,7 @@
 import { ExternalLink, CheckCircle, XCircle, Loader2 } from 'lucide-react'
-import { txExplorerUrl } from '@/utils'
+import { txExplorerUrl, EXPLORER_BASE } from '@/utils'
+
+const EXPLORER_HOST = EXPLORER_BASE.replace('https://', '')
 
 interface Props {
   hash?: string
@@ -46,7 +48,7 @@ export function TxResult({ hash, isPending, isConfirming, isSuccess, error, succ
               style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#bdd5f5', textDecoration: 'none', fontSize: 11, marginTop: 2 }}
             >
               <ExternalLink size={11} />
-              View on explorer.testnet.arc.io
+              View on {EXPLORER_HOST}
             </a>
           )}
         </div>

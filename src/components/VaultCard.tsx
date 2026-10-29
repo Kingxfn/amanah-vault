@@ -4,11 +4,13 @@ import { erc20Abi, parseAbiItem } from 'viem'
 import { AMANA_VAULT_ADDRESS, AMANA_VAULT_ABI } from '@/contract'
 import {
   formatUsdc, parseUsdcInput, formatAddress, formatCountdown,
-  parseOnchainError, txExplorerUrl, CHAIN_ID, downloadIcs,
+  parseOnchainError, txExplorerUrl, CHAIN_ID, downloadIcs, EXPLORER_BASE,
 } from '@/utils'
 import { getUsdc } from '@/onchain-facts'
 import { TxResult } from './TxResult'
 import { RefreshCw, ExternalLink, ChevronDown, ChevronUp, Users, CalendarPlus, History, Copy, Check } from 'lucide-react'
+
+const EXPLORER_HOST = EXPLORER_BASE.replace('https://', '')
 
 const USDC_ADDRESS = (getUsdc(CHAIN_ID)?.address ?? '0x3600000000000000000000000000000000000000') as `0x${string}`
 
@@ -174,7 +176,10 @@ export function VaultCard({ vaultId }: Props) {
       abi: AMANA_VAULT_ABI,
       functionName: 'deposit',
       args: [vaultId, parsedAmount],
-    }, { onError: (e) => setTxError(parseOnchainError(e)) }))
+    }, {
+      onSuccess: () => setAmountInput(''),
+      onError: (e) => setTxError(parseOnchainError(e)),
+    }))
   }
 
   function handleWithdraw() {
@@ -184,7 +189,10 @@ export function VaultCard({ vaultId }: Props) {
       abi: AMANA_VAULT_ABI,
       functionName: 'withdraw',
       args: [vaultId, parsedAmount],
-    }, { onError: (e) => setTxError(parseOnchainError(e)) }))
+    }, {
+      onSuccess: () => setAmountInput(''),
+      onError: (e) => setTxError(parseOnchainError(e)),
+    }))
   }
 
   function handleCheckIn() {
@@ -519,7 +527,7 @@ export function VaultCard({ vaultId }: Props) {
           className="flex items-center gap-1 text-xs text-[var(--accent-hover)] hover:underline"
         >
           <ExternalLink size={11} />
-          View on explorer.testnet.arc.io
+          View on {EXPLORER_HOST}
         </a>
       )}
     </div>

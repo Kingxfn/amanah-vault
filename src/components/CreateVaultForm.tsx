@@ -3,9 +3,11 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagm
 import { decodeEventLog } from 'viem'
 import { Plus, Trash2, ExternalLink, Calendar } from 'lucide-react'
 import { AMANA_VAULT_ADDRESS, AMANA_VAULT_ABI } from '@/contract'
-import { INTERVAL_OPTIONS, PENDING_WINDOW_OPTIONS, parseOnchainError, txExplorerUrl } from '@/utils'
+import { INTERVAL_OPTIONS, PENDING_WINDOW_OPTIONS, parseOnchainError, txExplorerUrl, EXPLORER_BASE } from '@/utils'
 import { TxResult } from './TxResult'
 import { ChainGuard } from './ChainGuard'
+
+const EXPLORER_HOST = EXPLORER_BASE.replace('https://', '')
 
 interface BeneficiaryRow {
   wallet: string
@@ -400,7 +402,7 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
             className="flex items-center gap-1 text-xs text-[var(--accent-hover)] hover:underline"
           >
             <ExternalLink size={11} />
-            View on explorer.testnet.arc.io
+            View on {EXPLORER_HOST}
           </a>
         )}
       </form>

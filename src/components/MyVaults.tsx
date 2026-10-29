@@ -39,7 +39,7 @@ export function MyVaults() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="display text-2xl font-bold text-[var(--ink)] tracking-tight">My vaults</h2>
-          <p className="text-sm text-[var(--muted)] mt-0.5">{total} vault{total !== 1 ? 's' : ''} on-chain</p>
+          <p className="text-sm text-[var(--muted)] mt-0.5">{total} vault{total !== 1 ? 's' : ''} onchain</p>
         </div>
         <button
           onClick={() => setShowCreate(v => !v)}
