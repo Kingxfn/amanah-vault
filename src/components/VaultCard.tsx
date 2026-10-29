@@ -8,7 +8,7 @@ import {
 } from '@/utils'
 import { getUsdc } from '@/onchain-facts'
 import { TxResult } from './TxResult'
-import { RefreshCw, ExternalLink, ChevronDown, ChevronUp, Users, CalendarPlus, History } from 'lucide-react'
+import { RefreshCw, ExternalLink, ChevronDown, ChevronUp, Users, CalendarPlus, History, Copy, Check } from 'lucide-react'
 
 const USDC_ADDRESS = (getUsdc(CHAIN_ID)?.address ?? '0x3600000000000000000000000000000000000000') as `0x${string}`
 
@@ -22,7 +22,26 @@ interface Props {
   vaultId: bigint
 }
 
-type ActionTab = 'deposit' | 'withdraw' | 'update' | 'history' | null
+type ActionTab = 'deposit' | 'withdraw' | 'update' | 'history' | 'beneficiaries' | null
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  function handleCopy() {
+    void navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      className="ml-1 text-[var(--muted)] hover:text-[var(--ink)] transition-colors"
+      aria-label="Copy address"
+      title={copied ? 'Copied!' : 'Copy'}
+    >
+      {copied ? <Check size={11} /> : <Copy size={11} />}
+    </button>
+  )
+}
 
 export function VaultCard({ vaultId }: Props) {
   const { address } = useAccount()
@@ -63,6 +82,9 @@ export function VaultCard({ vaultId }: Props) {
     chainId: CHAIN_ID,
     query: { enabled: !!address },
   })
+
+  // Beneficiary count — we read index 0..9 until we hit a revert to find all beneficiaries
+  // Simpler: read beneficiaries lazily when the tab is opened (see BeneficiariesPanel)
 
   const refetchAll = useCallback(() => {
     void refetchVault()
@@ -322,11 +344,22 @@ export function VaultCard({ vaultId }: Props) {
       <div className="grid grid-cols-2 gap-2 text-xs text-[var(--muted)]">
         <div>
           <div className="font-medium text-[var(--ink-2)]">Owner</div>
-          <div className="font-mono">{formatAddress(owner)}</div>
+          <div className="flex items-center font-mono">
+            {formatAddress(owner)}
+            <CopyButton text={owner} />
+          </div>
         </div>
         <div>
           <div className="font-medium text-[var(--ink-2)]">Last check-in</div>
           <div>{new Date(Number(lastCheckIn) * 1000).toLocaleString()}</div>
+        </div>
+        <div>
+          <div className="font-medium text-[var(--ink-2)]">Check-in interval</div>
+          <div>{formatCountdown(Number(checkInInterval))}</div>
+        </div>
+        <div>
+          <div className="font-medium text-[var(--ink-2)]">Release delay</div>
+          <div>{formatCountdown(Number(pendingWindow))}</div>
         </div>
       </div>
 
@@ -398,6 +431,22 @@ export function VaultCard({ vaultId }: Props) {
           )}
         </div>
       )}
+
+      {/* Beneficiaries viewer — available to everyone */}
+      <div>
+        <button
+          type="button"
+          onClick={() => setActiveTab(activeTab === 'beneficiaries' ? null : 'beneficiaries')}
+          className={`btn-ghost text-xs flex items-center gap-1.5 w-full justify-center py-1.5 ${activeTab === 'beneficiaries' ? 'border-[var(--accent)] text-[var(--accent)]' : ''}`}
+        >
+          <Users size={13} />
+          Beneficiaries
+          {activeTab === 'beneficiaries' ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
+        {activeTab === 'beneficiaries' && (
+          <BeneficiariesViewer vaultId={vaultId} />
+        )}
+      </div>
 
       {/* Deposit history */}
       <div>
@@ -492,6 +541,47 @@ function AmountInput({ value, onChange }: { value: string; onChange: (v: string)
       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-[var(--muted)] pointer-events-none">
         USDC
       </span>
+    </div>
+  )
+}
+
+function BeneficiariesViewer({ vaultId }: { vaultId: bigint }) {
+  // Read up to 10 beneficiaries by index; stop when we get an error
+  const reads = Array.from({ length: 10 }, (_, i) =>
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useReadContract({
+      address: AMANA_VAULT_ADDRESS,
+      abi: AMANA_VAULT_ABI,
+      functionName: 'beneficiaries',
+      args: [vaultId, BigInt(i)],
+      chainId: CHAIN_ID,
+    })
+  )
+
+  const entries = reads
+    .map(r => r.data)
+    .filter((d): d is NonNullable<typeof d> => !!d && d[0] !== '0x0000000000000000000000000000000000000000')
+
+  return (
+    <div style={{ marginTop: 8, borderRadius: 10, border: '1px solid rgba(139,92,246,0.18)', background: 'rgba(10,16,36,0.85)', padding: '10px 12px' }}>
+      {entries.length === 0 ? (
+        <p className="text-xs text-[var(--muted)] text-center py-1">Loading…</p>
+      ) : (
+        <div className="space-y-2">
+          {entries.map((b, i) => (
+            <div key={i} className="flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-1 font-mono text-[var(--ink-2)] min-w-0">
+                <span className="text-[var(--muted)] shrink-0">{i + 1}.</span>
+                <span className="truncate">{formatAddress(b[0])}</span>
+                <CopyButton text={b[0]} />
+              </div>
+              <span className="tabular-nums font-semibold text-[var(--success)] shrink-0">
+                {(Number(b[1]) / 100).toFixed(2)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

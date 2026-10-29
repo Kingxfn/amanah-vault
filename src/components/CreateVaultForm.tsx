@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { decodeEventLog } from 'viem'
 import { Plus, Trash2, ExternalLink, Calendar } from 'lucide-react'
 import { AMANA_VAULT_ADDRESS, AMANA_VAULT_ABI } from '@/contract'
 import { INTERVAL_OPTIONS, PENDING_WINDOW_OPTIONS, parseOnchainError, txExplorerUrl } from '@/utils'
@@ -40,9 +41,24 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
 
   const [acknowledged, setAcknowledged] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [newVaultId, setNewVaultId] = useState<bigint | null>(null)
 
   const { writeContract, data: hash, isPending, reset } = useWriteContract()
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+  const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({ hash })
+
+  // Extract vault ID from VaultCreated event in the receipt
+  useEffect(() => {
+    if (!isSuccess || !receipt) return
+    for (const log of receipt.logs) {
+      try {
+        const decoded = decodeEventLog({ abi: AMANA_VAULT_ABI, data: log.data, topics: log.topics })
+        if (decoded.eventName === 'VaultCreated') {
+          setNewVaultId((decoded.args as { vaultId: bigint }).vaultId)
+          break
+        }
+      } catch { /* not this event */ }
+    }
+  }, [isSuccess, receipt])
 
   // Seconds from interval selection
   const intervalSeconds = useMemo(() => {
@@ -373,7 +389,7 @@ export function CreateVaultForm({ onCreated }: { onCreated?: () => void }) {
           isPending={isPending}
           isConfirming={isConfirming}
           isSuccess={isSuccess}
-          successMsg="Vault created!"
+          successMsg={newVaultId !== null ? `Vault #${newVaultId} created!` : 'Vault created!'}
         />
 
         {isSuccess && hash && (

@@ -65,7 +65,8 @@ export function formatCountdown(secondsLeft: number): string {
   const s = secondsLeft % 60
   if (d > 0) return `${d}d ${h}h ${m}m`
   if (h > 0) return `${h}h ${m}m ${s}s`
-  return `${m}m ${s}s`
+  if (m > 0) return `${m}m ${s}s`
+  return `${s}s`
 }
 
 export function parseOnchainError(err: unknown): string {
