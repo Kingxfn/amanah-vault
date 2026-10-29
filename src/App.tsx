@@ -11,11 +11,14 @@ import { MyVaults } from './components/MyVaults'
 import { CreateVaultForm } from './components/CreateVaultForm'
 import { ReleasePage } from './components/ReleasePage'
 import { ChainGuard } from './components/ChainGuard'
-import { addressExplorerUrl } from './utils'
+import { addressExplorerUrl, chainName } from './utils'
 import { AMANA_VAULT_ADDRESS, AMANA_VAULT_ABI } from './contract'
 import { getUsdc } from './onchain-facts'
 import { formatUsdc } from './onchain-money'
 import { CHAIN_ID } from './utils'
+
+const NETWORK_LABEL = chainName()
+const IS_MAINNET = import.meta.env.VITE_ARC_MAINNET === 'true'
 
 const USDC_ADDRESS = (getUsdc(CHAIN_ID)?.address ?? '0x3600000000000000000000000000000000000000') as `0x${string}`
 const contractIsDeployed = AMANA_VAULT_ADDRESS !== '0x0000000000000000000000000000000000000000'
@@ -68,15 +71,15 @@ function WalletBar() {
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '10px 20px', gap: 12, minHeight: 52,
     }}>
-      {/* Left: network badge only */}
+      {/* Left: network badge */}
       <span style={{
         fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
         padding: '3px 8px', borderRadius: 6,
-        background: 'rgba(59,130,246,0.12)',
-        color: '#60a5fa',
-        border: '1px solid rgba(59,130,246,0.28)',
+        background: IS_MAINNET ? 'rgba(52,211,153,0.12)' : 'rgba(59,130,246,0.12)',
+        color: IS_MAINNET ? '#34d399' : '#60a5fa',
+        border: `1px solid ${IS_MAINNET ? 'rgba(52,211,153,0.28)' : 'rgba(59,130,246,0.28)'}`,
       }}>
-        Arc Testnet
+        {NETWORK_LABEL}
       </span>
 
       {/* Right: balance + address + disconnect/connect */}
@@ -272,7 +275,7 @@ function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }) {
             padding: '14px 18px',
           }}>
             <p style={{ margin: 0, fontSize: 13, color: '#6a849f' }}>
-              You have {totalVaults} vault{totalVaults !== 1 ? 's' : ''} onchain.{' '}
+              {totalVaults} vault{totalVaults !== 1 ? 's' : ''} exist onchain.{' '}
               <button
                 onClick={() => onNavigate('vaults')}
                 style={{
@@ -281,9 +284,9 @@ function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }) {
                   textDecoration: 'underline',
                 }}
               >
-                Open the Vaults page
+                Open My Vaults
               </button>{' '}
-              to manage them.
+              to see which ones are yours.
             </p>
           </div>
         </div>
@@ -491,7 +494,7 @@ export default function App() {
                   Contract
                 </a>
               )}
-              <span>Arc Testnet · USDC 0x3600…0000</span>
+              <span>{NETWORK_LABEL} · USDC {USDC_ADDRESS.slice(0, 6)}…{USDC_ADDRESS.slice(-4)}</span>
             </div>
           </div>
         </footer>

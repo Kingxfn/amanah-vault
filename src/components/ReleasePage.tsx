@@ -435,12 +435,6 @@ function ThirdPartyDepositPanel({ vaultId, onDeposited }: { vaultId: bigint; onD
   const { writeContract, data: hash, isPending, reset } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
-  useEffect(() => {
-    if (isSuccess) {
-      onDeposited()
-    }
-  }, [isSuccess, onDeposited])
-
   function handleApprove() {
     setErr(null); reset()
     writeContract({
@@ -459,7 +453,7 @@ function ThirdPartyDepositPanel({ vaultId, onDeposited }: { vaultId: bigint; onD
       address: AMANA_VAULT_ADDRESS, abi: AMANA_VAULT_ABI, functionName: 'deposit',
       args: [vaultId, parsedAmount],
     }, {
-      onSuccess: () => setAmountInput(''),
+      onSuccess: () => { setAmountInput(''); onDeposited() },
       onError: (e) => setErr(parseOnchainError(e)),
     })
   }
