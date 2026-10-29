@@ -1,14 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
+import { erc20Abi } from 'viem'
 import { AMANA_VAULT_ADDRESS, AMANA_VAULT_ABI } from '@/contract'
 import {
   formatUsdc, formatAddress, formatCountdown,
-  parseOnchainError, txExplorerUrl, CHAIN_ID, EXPLORER_BASE,
+  parseOnchainError, parseUsdcInput, txExplorerUrl, CHAIN_ID, EXPLORER_BASE,
 } from '@/utils'
-
+import { getUsdc } from '@/onchain-facts'
 import { TxResult } from './TxResult'
-import { ExternalLink, Search, Shield, AlertTriangle } from 'lucide-react'
+import { ExternalLink, Search, Shield, AlertTriangle, ChevronDown, ChevronUp, Send } from 'lucide-react'
 import { ChainGuard } from './ChainGuard'
+
+const USDC_ADDRESS = (getUsdc(CHAIN_ID)?.address ?? '0x3600000000000000000000000000000000000000') as `0x${string}`
 
 const EXPLORER_HOST = EXPLORER_BASE.replace('https://', '')
 
@@ -339,6 +342,11 @@ export function ReleasePage() {
               <p className="text-sm text-[var(--muted)]">No claimable balance for your address on this vault.</p>
             )}
 
+            {/* Third-party deposit — available when vault is active */}
+            {!released && active && vaultId !== null && (
+              <ThirdPartyDepositPanel vaultId={vaultId} onDeposited={refetchAll} />
+            )}
+
             <TxResult
               hash={hash}
               isPending={isPending}
@@ -393,6 +401,103 @@ export function ReleasePage() {
           ))}
         </ul>
       </div>
+    </div>
+  )
+}
+
+function ThirdPartyDepositPanel({ vaultId, onDeposited }: { vaultId: bigint; onDeposited: () => void }) {
+  const { address } = useAccount()
+  const [open, setOpen] = useState(false)
+  const [amountInput, setAmountInput] = useState('')
+  const [err, setErr] = useState<string | null>(null)
+
+  const parsedAmount = parseUsdcInput(amountInput)
+
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+    address: USDC_ADDRESS,
+    abi: erc20Abi,
+    functionName: 'allowance',
+    args: [address!, AMANA_VAULT_ADDRESS],
+    chainId: CHAIN_ID,
+    query: { enabled: !!address },
+  })
+
+  const needsApprove = parsedAmount > 0n && (allowance ?? 0n) < parsedAmount
+
+  const { writeContract, data: hash, isPending, reset } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  useEffect(() => {
+    if (isSuccess) {
+      onDeposited()
+    }
+  }, [isSuccess, onDeposited])
+
+  function handleApprove() {
+    setErr(null); reset()
+    writeContract({
+      address: USDC_ADDRESS, abi: erc20Abi, functionName: 'approve',
+      args: [AMANA_VAULT_ADDRESS, parsedAmount],
+    }, {
+      onSuccess: () => { void refetchAllowance() },
+      onError: (e) => setErr(parseOnchainError(e)),
+    })
+  }
+
+  function handleDeposit() {
+    if (parsedAmount === 0n) { setErr('Enter an amount.'); return }
+    setErr(null); reset()
+    writeContract({
+      address: AMANA_VAULT_ADDRESS, abi: AMANA_VAULT_ABI, functionName: 'deposit',
+      args: [vaultId, parsedAmount],
+    }, {
+      onSuccess: () => setAmountInput(''),
+      onError: (e) => setErr(parseOnchainError(e)),
+    })
+  }
+
+  return (
+    <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 12 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className={`btn-ghost text-xs flex items-center gap-1.5 w-full justify-center py-1.5 ${open ? 'border-[var(--accent)] text-[var(--accent)]' : ''}`}
+      >
+        <Send size={13} />
+        Deposit to this vault
+        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+      </button>
+      {open && (
+        <div style={{ marginTop: 10, borderRadius: 12, border: '1px solid rgba(59,130,246,0.22)', background: 'rgba(10,16,36,0.85)', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {!address ? (
+            <p className="text-xs text-[var(--muted)]">Connect your wallet to deposit.</p>
+          ) : (
+            <>
+              <label className="label-sm">Amount to deposit (USDC)</label>
+              <div className="relative">
+                <input
+                  type="number" min="0" step="0.000001" placeholder="0.00"
+                  value={amountInput}
+                  onChange={e => setAmountInput(e.target.value)}
+                  className="input w-full pr-14 tabular-nums"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-[var(--muted)] pointer-events-none">USDC</span>
+              </div>
+              {err && <p className="text-xs text-[var(--danger)]">{err}</p>}
+              {needsApprove ? (
+                <button onClick={handleApprove} disabled={isPending || isConfirming} className="btn-primary w-full text-sm">
+                  {isPending ? 'Confirm…' : 'Approve USDC'}
+                </button>
+              ) : (
+                <button onClick={handleDeposit} disabled={isPending || isConfirming || parsedAmount === 0n} className="btn-primary w-full text-sm">
+                  {isPending ? 'Confirm…' : 'Deposit'}
+                </button>
+              )}
+              <TxResult hash={hash} isPending={isPending} isConfirming={isConfirming} isSuccess={isSuccess} successMsg="Deposited!" error={err} />
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }

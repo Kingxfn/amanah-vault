@@ -440,6 +440,35 @@ export function VaultCard({ vaultId }: Props) {
         </div>
       )}
 
+      {/* Non-owner deposit — shown when not owner, vault is active and not released */}
+      {!isOwner && !released && active && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setActiveTab(activeTab === 'deposit' ? null : 'deposit')}
+            className={`btn-ghost text-xs flex items-center gap-1.5 w-full justify-center py-1.5 ${activeTab === 'deposit' ? 'border-[var(--accent)] text-[var(--accent)]' : ''}`}
+          >
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] mr-0.5">Deposit to this vault</span>
+            {activeTab === 'deposit' ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </button>
+          {activeTab === 'deposit' && (
+            <div style={{ marginTop: 8, borderRadius: 12, border: '1px solid rgba(59,130,246,0.22)', background: 'rgba(10,16,36,0.85)', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label className="label-sm">Amount (USDC)</label>
+              <AmountInput value={amountInput} onChange={setAmountInput} />
+              {needsApprove ? (
+                <button onClick={handleApprove} disabled={isPending || isConfirming} className="btn-primary w-full text-sm">
+                  {isPending ? 'Confirm…' : 'Approve USDC'}
+                </button>
+              ) : (
+                <button onClick={handleDeposit} disabled={isPending || isConfirming || parsedAmount === 0n} className="btn-primary w-full text-sm">
+                  {isPending ? 'Confirm…' : 'Deposit'}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Beneficiaries viewer — available to everyone */}
       <div>
         <button
