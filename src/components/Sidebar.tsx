@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  LayoutDashboard, Vault, PlusCircle, Send, BookOpen, Menu, X,
+  LayoutDashboard, Vault, PlusCircle, Search, BookOpen, Menu, X,
 } from 'lucide-react'
 
 export type Page = 'summary' | 'vaults' | 'create' | 'release' | 'howto'
@@ -9,7 +9,7 @@ const NAV: { id: Page; label: string; icon: typeof Vault }[] = [
   { id: 'summary', label: 'Dashboard',      icon: LayoutDashboard },
   { id: 'vaults',  label: 'My Vaults',      icon: Vault           },
   { id: 'create',  label: 'Create Vault',   icon: PlusCircle      },
-  { id: 'release', label: 'Release & Claim',icon: Send            },
+  { id: 'release', label: 'Vault Lookup',   icon: Search          },
   { id: 'howto',   label: 'How It Works',   icon: BookOpen        },
 ]
 

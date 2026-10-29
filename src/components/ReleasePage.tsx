@@ -151,9 +151,9 @@ export function ReleasePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="display text-2xl font-bold text-[var(--ink)] tracking-tight">Release a vault</h2>
+        <h2 className="display text-2xl font-bold text-[var(--ink)] tracking-tight">Vault lookup</h2>
         <p className="text-sm text-[var(--muted)] mt-1 text-pretty">
-          Release is a two-step process: anyone can start it once the check-in period has expired, then the owner has a window to cancel. After the window closes, anyone can finalize the release and distribute funds to beneficiaries. The person who starts or finalizes the release receives nothing.
+          Look up any vault by ID. Beneficiaries can claim here after a release. Anyone can deposit, start a release once the check-in period expires, or finalize it once the release delay passes. The person who triggers start or finalize receives nothing.
         </p>
       </div>
 
@@ -203,8 +203,16 @@ export function ReleasePage() {
                 <div className="text-[var(--ink-2)]">{new Date(lastCheckIn * 1000).toLocaleString()}</div>
               </div>
               <div>
+                <div className="text-xs text-[var(--muted)] mb-0.5">Release delay</div>
+                <div className="text-[var(--ink-2)]">{formatCountdown(pendingWindow)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-[var(--muted)] mb-0.5">Check-in interval</div>
+                <div className="text-[var(--ink-2)]">{formatCountdown(checkInInterval)}</div>
+              </div>
+              <div>
                 <div className="text-xs text-[var(--muted)] mb-0.5">
-                  {isPending_ ? 'Finalize window' : 'Time remaining'}
+                  {isPending_ ? 'Cancellation window' : 'Time remaining'}
                 </div>
                 <div className={`tabular-nums font-medium ${
                   isPendingWindowExpired ? 'text-[var(--danger)]'

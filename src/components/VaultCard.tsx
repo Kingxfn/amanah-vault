@@ -309,12 +309,12 @@ export function VaultCard({ vaultId }: Props) {
           <div style={{ fontWeight: 600 }}>
             {isPendingWindowExpired
               ? 'Release window expired — ready to finalize'
-              : `Release pending — ${formatCountdown(pendingSecsLeft)} to cancel`}
+              : `Release pending — ${formatCountdown(pendingSecsLeft)} left to cancel`}
           </div>
           <div style={{ fontSize: 12, opacity: 0.85 }}>
             {isPendingWindowExpired
-              ? 'Anyone can now call Finalize Release to distribute funds to beneficiaries.'
-              : 'Check in now to cancel the release and restart your timer.'}
+              ? 'Anyone can now finalize this release to distribute funds to beneficiaries.'
+              : `Check in now to cancel. Total window: ${formatCountdown(pendingWindowSecs)}.`}
           </div>
         </div>
       )}
