@@ -8,20 +8,21 @@ This is the **project memory** - what Arc Studio remembers about building this a
 
 ## What This App Does
 
-AmanahVault is a dead-man's-switch USDC inheritance vault on Arc. The owner deposits USDC, checks in periodically, and if they miss their check-in window anyone can call `release()` to allocate the balance to beneficiaries by share (basis points). Beneficiaries then claim their individual share via `claim()`.
+AmanahVault is a dead-man's-switch USDC inheritance vault on Arc. The owner deposits USDC, checks in periodically, and if they miss their check-in window anyone can call `startRelease()` to begin a cancellable pending window. Once the pending window elapses, anyone can call `finalizeRelease()` to distribute the balance to beneficiaries by share (basis points). The owner can cancel by calling `checkIn()` during the pending window. Beneficiaries then pull their individual share via `claim()`.
 
 ## Deployed Contracts
 
 | Contract | Chain | Address | Explorer |
 |---|---|---|---|
 | AmanahVault (single-tenant v1, deprecated) | Arc Testnet | 0xa774c2c2af6ca4f0cc5a08fe8b47b98d1e1f92a7 | https://explorer.testnet.arc.io/address/0xa774c2c2af6ca4f0cc5a08fe8b47b98d1e1f92a7 |
-| AmanahVault (multi-tenant v2, **active**) | Arc Testnet | 0x45046EA5600dB33bAC486439A3A30C82B101016F | https://explorer.testnet.arc.io/address/0x45046EA5600dB33bAC486439A3A30C82B101016F |
+| AmanahVault (multi-tenant v1, retired) | Arc Testnet | 0x45046EA5600dB33bAC486439A3A30C82B101016F | https://explorer.testnet.arc.io/address/0x45046EA5600dB33bAC486439A3A30C82B101016F |
+| AmanahVault (multi-tenant v2, **active**) | Arc Testnet | 0x6103ac5a11f639a66b3d25bc9da918c4c714e54d | https://explorer.testnet.arc.io/address/0x6103ac5a11f639a66b3d25bc9da918c4c714e54d |
 
-Constructor args used for initial deploy:
+Constructor args (v2 deploy):
 - `_usdc`: `0x3600000000000000000000000000000000000000` (USDC on Arc Testnet/Mainnet)
-- `_beneficiaryWallets`: `["0x5B12Ce46C7194aD57d143bC22847224047b1Ef42"]`
-- `_shareBps`: `[10000]`
-- `_checkInInterval`: `86400` (24 hours)
+
+Vault struct (7 fields): `owner`, `lastCheckIn`, `checkInInterval`, `pendingWindow`, `pendingSince`, `released`, `active`
+Constants: `MIN_PENDING_WINDOW = 60s`, `MAX_PENDING_WINDOW = 2592000s (30 days)`
 
 ## Tech Stack
 
